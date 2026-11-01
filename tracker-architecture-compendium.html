@@ -1,0 +1,2375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Darknet & Swarm Engineering: Polyglot BitTorrent Tracker & Theoretical P2P Compendium</title>
+<style>
+  :root {
+    --bg-base: #07080a;
+    --bg-panel: #0e1015;
+    --bg-card: #13161c;
+    --bg-code: #0a0c0e;
+    --border-dim: #222630;
+    --border-glow: #2e3846;
+    --text-main: #d8dee9;
+    --text-muted: #8892b0;
+    --accent-green: #00f59b;
+    --accent-amber: #ffb84d;
+    --accent-crimson: #ff3366;
+    --accent-cyan: #00d2ff;
+    --accent-purple: #bd93f9;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    line-height: 1.65;
+    display: flex;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* SIDEBAR NAVIGATION */
+  aside.sidebar {
+    width: 310px;
+    background-color: var(--bg-panel);
+    border-right: 1px solid var(--border-dim);
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .brand-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-dim);
+    background: linear-gradient(135deg, #090b0e 0%, #141821 100%);
+  }
+
+  .brand-title {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--accent-green);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .brand-sub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-family: var(--font-mono);
+  }
+
+  .search-box {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-dim);
+  }
+
+  .search-box input {
+    width: 100%;
+    background: var(--bg-base);
+    border: 1px solid var(--border-dim);
+    color: var(--text-main);
+    padding: 8px 12px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    border-radius: 4px;
+    outline: none;
+  }
+
+  .search-box input:focus {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 8px rgba(0, 245, 155, 0.15);
+  }
+
+  .nav-controls {
+    display: flex;
+    gap: 6px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-dim);
+  }
+
+  .btn-ctrl {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    padding: 6px 8px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s ease;
+  }
+
+  .btn-ctrl:hover {
+    color: var(--accent-green);
+    border-color: var(--accent-green);
+  }
+
+  nav.toc {
+    padding: 12px 0;
+    flex: 1;
+  }
+
+  .toc-group-label {
+    padding: 8px 20px 4px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--accent-amber);
+    letter-spacing: 1px;
+  }
+
+  nav.toc a {
+    display: block;
+    padding: 8px 20px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.84rem;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+  }
+
+  nav.toc a:hover, nav.toc a.active {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.03);
+    border-left-color: var(--accent-green);
+  }
+
+  .sidebar-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border-dim);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* MAIN WORKSPACE */
+  main.workspace {
+    margin-left: 310px;
+    flex: 1;
+    padding: 36px 48px 80px;
+    max-width: 1380px;
+  }
+
+  .hero-banner {
+    background: linear-gradient(180deg, rgba(19,22,28,0.9) 0%, rgba(14,16,21,0.95) 100%);
+    border: 1px solid var(--border-glow);
+    border-left: 4px solid var(--accent-green);
+    padding: 28px 32px;
+    border-radius: 6px;
+    margin-bottom: 32px;
+  }
+
+  .hero-banner h1 {
+    font-family: var(--font-mono);
+    font-size: 1.65rem;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+
+  .hero-banner p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    max-width: 960px;
+  }
+
+  .badge-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    padding: 3px 9px;
+    border-radius: 3px;
+    background: var(--bg-base);
+    border: 1px solid var(--border-dim);
+  }
+
+  .badge.green { color: var(--accent-green); border-color: rgba(0,245,155,0.35); }
+  .badge.amber { color: var(--accent-amber); border-color: rgba(255,184,77,0.35); }
+  .badge.cyan  { color: var(--accent-cyan);  border-color: rgba(0,210,255,0.35); }
+  .badge.crimson { color: var(--accent-crimson); border-color: rgba(255,51,102,0.35); }
+
+  /* COLLAPSIBLE MODULES */
+  details.module {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    border-radius: 6px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+
+  details.module[open] {
+    border-color: var(--border-glow);
+  }
+
+  summary.module-header {
+    padding: 18px 24px;
+    background: var(--bg-card);
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #fff;
+    list-style: none;
+    border-bottom: 1px solid transparent;
+  }
+
+  summary.module-header::-webkit-details-marker {
+    display: none;
+  }
+
+  details.module[open] > summary.module-header {
+    border-bottom-color: var(--border-dim);
+    color: var(--accent-green);
+  }
+
+  .module-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mod-index {
+    background: var(--bg-base);
+    color: var(--accent-amber);
+    border: 1px solid var(--border-dim);
+    padding: 2px 8px;
+    font-size: 0.8rem;
+    border-radius: 3px;
+  }
+
+  .chevron {
+    transition: transform 0.2s ease;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  details.module[open] > summary.module-header .chevron {
+    transform: rotate(90deg);
+    color: var(--accent-green);
+  }
+
+  .module-body {
+    padding: 26px 28px;
+  }
+
+  /* SUB-ACCORDIONS */
+  details.sub-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    border-radius: 4px;
+    margin: 16px 0;
+  }
+
+  summary.sub-header {
+    padding: 12px 18px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--accent-cyan);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    list-style: none;
+  }
+
+  summary.sub-header::-webkit-details-marker { display: none; }
+
+  .sub-body {
+    padding: 18px;
+    border-top: 1px solid var(--border-dim);
+    background: rgba(10, 12, 14, 0.5);
+  }
+
+  /* TYPOGRAPHY & ELEMENTS */
+  h2, h3, h4 {
+    font-family: var(--font-mono);
+    margin: 22px 0 10px;
+    color: #fff;
+  }
+
+  h3 { font-size: 1.05rem; color: var(--accent-amber); }
+  h4 { font-size: 0.92rem; color: var(--accent-cyan); }
+
+  p { margin-bottom: 14px; font-size: 0.94rem; }
+
+  ul, ol {
+    margin: 10px 0 18px 24px;
+    font-size: 0.93rem;
+  }
+
+  li { margin-bottom: 8px; }
+
+  code.inline {
+    font-family: var(--font-mono);
+    font-size: 0.83rem;
+    background: var(--bg-code);
+    color: var(--accent-green);
+    padding: 2px 6px;
+    border: 1px solid var(--border-dim);
+    border-radius: 3px;
+  }
+
+  /* CODE BLOCKS */
+  .code-container {
+    position: relative;
+    margin: 16px 0 22px;
+    border: 1px solid var(--border-dim);
+    border-radius: 5px;
+    background: var(--bg-code);
+    overflow: hidden;
+  }
+
+  .code-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #101319;
+    padding: 7px 14px;
+    border-bottom: 1px solid var(--border-dim);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .lang-tag {
+    color: var(--accent-amber);
+    font-weight: 600;
+  }
+
+  .copy-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  .copy-btn:hover {
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+  }
+
+  pre {
+    padding: 16px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: #e5e9f0;
+  }
+
+  /* TABLES */
+  table.spec-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 0.85rem;
+  }
+
+  table.spec-table th, table.spec-table td {
+    border: 1px solid var(--border-dim);
+    padding: 10px 14px;
+    text-align: left;
+  }
+
+  table.spec-table th {
+    background: var(--bg-card);
+    color: var(--accent-green);
+    font-family: var(--font-mono);
+    font-weight: 600;
+  }
+
+  table.spec-table tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.015);
+  }
+
+  /* CALLOUT BOXES */
+  .callout {
+    border-left: 3px solid var(--accent-amber);
+    background: rgba(255, 184, 77, 0.05);
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 0 4px 4px 0;
+    font-size: 0.89rem;
+  }
+
+  .callout.danger {
+    border-left-color: var(--accent-crimson);
+    background: rgba(255, 51, 102, 0.06);
+  }
+
+  .callout.info {
+    border-left-color: var(--accent-cyan);
+    background: rgba(0, 210, 255, 0.05);
+  }
+
+  .callout-title {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  /* ANIMATED SVG FLOWCHARTS */
+  .diagram-wrapper {
+    background: #080a0d;
+    border: 1px solid var(--border-dim);
+    border-radius: 6px;
+    padding: 20px;
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+
+  .diagram-caption {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  svg.flow-svg {
+    width: 100%;
+    max-width: 960px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+  }
+
+  .pulse-path {
+    stroke-dasharray: 8 6;
+    animation: flowDash 1.2s linear infinite;
+  }
+
+  .pulse-path-reverse {
+    stroke-dasharray: 8 6;
+    animation: flowDashRev 1.4s linear infinite;
+  }
+
+  .pulse-fast {
+    stroke-dasharray: 6 4;
+    animation: flowDash 0.65s linear infinite;
+  }
+
+  .node-glow {
+    animation: nodePulse 3s ease-in-out infinite;
+  }
+
+  @keyframes flowDash {
+    to { stroke-dashoffset: -28; }
+  }
+
+  @keyframes flowDashRev {
+    to { stroke-dashoffset: 28; }
+  }
+
+  @keyframes nodePulse {
+    0%, 100% { filter: drop-shadow(0 0 3px rgba(0, 245, 155, 0.25)); }
+    50% { filter: drop-shadow(0 0 10px rgba(0, 245, 155, 0.65)); }
+  }
+
+  /* INTERACTIVE LAB WIDGET */
+  .lab-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-top: 14px;
+  }
+
+  .lab-box {
+    background: var(--bg-code);
+    border: 1px solid var(--border-dim);
+    padding: 16px;
+    border-radius: 4px;
+  }
+
+  .lab-box label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--accent-amber);
+    margin-bottom: 6px;
+  }
+
+  .lab-box textarea, .lab-box input {
+    width: 100%;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    color: var(--accent-green);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    padding: 10px;
+    border-radius: 3px;
+    outline: none;
+  }
+
+  .math-block {
+    background: var(--bg-code);
+    border-left: 3px solid var(--accent-purple);
+    padding: 12px 16px;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: #e2d9ff;
+    margin: 14px 0;
+    overflow-x: auto;
+  }
+
+  @media (max-width: 1024px) {
+    aside.sidebar { width: 250px; }
+    main.workspace { margin-left: 250px; padding: 24px; }
+    .lab-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 768px) {
+    body { flex-direction: column; }
+    aside.sidebar { position: relative; width: 100%; border-right: none; border-bottom: 1px solid var(--border-dim); }
+    main.workspace { margin-left: 0; padding: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="brand-header">
+    <div class="brand-title">
+      <span>&#9650;</span> SWARM // NEXUS
+    </div>
+    <div class="brand-sub">P2P Protocol & Anonymity Engineering</div>
+  </div>
+
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Filter modules or keywords..." autocomplete="off">
+  </div>
+
+  <div class="nav-controls">
+    <button class="btn-ctrl" id="btnExpandAll">[+] Expand All</button>
+    <button class="btn-ctrl" id="btnCollapseAll">[-] Collapse All</button>
+  </div>
+
+  <nav class="toc" id="tocNav">
+    <div class="toc-group-label">Core Specifications</div>
+    <a href="#mod-1">01. Protocol Internals & Wire Specs</a>
+    <a href="#mod-2">02. C# .NET 8 High-Perf Tracker</a>
+    <a href="#mod-3">03. Python 3.12+ Asyncio Tracker</a>
+    <a href="#mod-4">04. Node.js Hybrid Swarm Engine</a>
+    <div class="toc-group-label">Hardening & Darknets</div>
+    <a href="#mod-5">05. Code, Memory & Data Security</a>
+    <a href="#mod-6">06. Operational Anonymity & Mixnets</a>
+    <div class="toc-group-label">Bleeding Edge & Theoretical</div>
+    <a href="#mod-7">07. Next-Gen P2P Protocols</a>
+    <a href="#mod-8">08. Theoretical & Unimplemented</a>
+    <a href="#mod-9">09. Interactive Bencode & Wire Lab</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <span>REV: 2026.11</span>
+    <span>BEP-03/15/52/ZK</span>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="workspace">
+
+  <div class="hero-banner">
+    <h1>BitTorrent Tracker Engineering, Darknet OPSEC & Post-DHT Cryptography</h1>
+    <p>A first-principles technical compendium covering binary wire parsing, zero-allocation tracker architectures in C# .NET 8, Python, and Node.js, adversarial Sybil/DoS mitigation, onion/garlic routing integration, and theoretical cryptographic file-sharing primitives (PIR, Oblivious RAM Swarms, and zk-SNARK Proof-of-Seeding).</p>
+    <div class="badge-strip">
+      <span class="badge green">C# .NET 8 SocketAsync / Span&lt;T&gt;</span>
+      <span class="badge cyan">Python 3.12+ Asyncio Datagram</span>
+      <span class="badge amber">Node.js UDP4 / WebSocket Hybrid</span>
+      <span class="badge crimson">Sphinx Mixnets / PIR / zk-Swarm</span>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODULE 01: PROTOCOL INTERNALS & WIRE SPECS
+  ====================================================================== -->
+  <details class="module" id="mod-1" open>
+    <summary class="module-header">
+      <div class="module-header-left">
+        <span class="mod-index">MOD 01</span>
+        <span>BitTorrent Tracker Internals, Bencode AST & Binary Wire Specifications</span>
+      </div>
+      <span class="chevron">&#9654;</span>
+    </summary>
+    <div class="module-body">
+      <p>A BitTorrent tracker is a stateless or semi-stateful rendezvous directory that maps an <code class="inline">info_hash</code> (20-byte SHA-1 in BEP 03, or 32-byte SHA-256 truncated/hybrid in BEP 52) to an active set of peer socket endpoints. Trackers never touch payload blocks; they coordinate swarm topology and collect telemetry via HTTP/HTTPS (BEP 03/23), UDP (BEP 15), or WebSockets (WebTorrent).</p>
+
+      <h3>1.1 Deterministic Bencode Grammar (BEP 03)</h3>
+      <p>Bencode is a prefix-delimited, big-endian data serialization format supporting four primitives. Unlike JSON, Bencode requires strict lexicographical sorting of dictionary keys by raw byte value so that the SHA-1/SHA-256 digest of the <code class="inline">info</code> dictionary is deterministic across all implementations.</p>
+
+      <table class="spec-table">
+        <thead>
+          <tr>
+            <th>Primitive</th>
+            <th>Wire Grammar</th>
+            <th>Byte Example</th>
+            <th>Parser Invariant & Security Constraint</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Integer</strong></td>
+            <td><code class="inline">i&lt;base10&gt;e</code></td>
+            <td><code class="inline">i-42e</code>, <code class="inline">i0e</code></td>
+            <td>64-bit signed integer. Leading zeros (<code class="inline">i03e</code>) and negative zero (<code class="inline">i-0e</code>) are strictly malformed and must be rejected.</td>
+          </tr>
+          <tr>
+            <td><strong>Byte String</strong></td>
+            <td><code class="inline">&lt;length&gt;:&lt;bytes&gt;</code></td>
+            <td><code class="inline">4:spam</code></td>
+            <td>Length is ASCII base-10 followed by <code class="inline">0x3A</code> (<code class="inline">:</code>). Raw bytes follow—not necessarily UTF-8 (e.g., <code class="inline">peers</code> compact array).</td>
+          </tr>
+          <tr>
+            <td><strong>List</strong></td>
+            <td><code class="inline">l&lt;items&gt;e</code></td>
+            <td><code class="inline">l4:spami42ee</code></td>
+            <td>Heterogeneous sequence terminated by <code class="inline">0x65</code> (<code class="inline">e</code>). Enforce max recursion depth (&le; 32) to prevent stack exhaustion.</td>
+          </tr>
+          <tr>
+            <td><strong>Dictionary</strong></td>
+            <td><code class="inline">d&lt;key&gt;&lt;val&gt;e</code></td>
+            <td><code class="inline">d3:bari1e3:fooi2ee</code></td>
+            <td>Keys must be Byte Strings sorted in ascending raw byte order. Duplicate keys must trigger immediate parser abort.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>1.2 BEP 23 (IPv4) & BEP 07 (IPv6) Compact Peer Lists</h3>
+      <p>Returning Bencoded dictionaries per peer (<code class="inline">d7:peer id20:...2:ip...4:port...e</code>) wastes ~60% bandwidth. Modern trackers enforce <code class="inline">compact=1</code>:</p>
+      <ul>
+        <li><strong>IPv4 Compact (<code class="inline">peers</code> key):</strong> Contiguous byte string of <code class="inline">6 * N</code> bytes. Every 6-byte stride packs a 32-bit big-endian IPv4 address (4 bytes) followed by a 16-bit big-endian port (2 bytes).</li>
+        <li><strong>IPv6 Compact (<code class="inline">peers6</code> key):</strong> Contiguous byte string of <code class="inline">18 * N</code> bytes. Every 18-byte stride packs a 128-bit big-endian IPv6 address (16 bytes) followed by a 16-bit big-endian port (2 bytes).</li>
+      </ul>
+
+      <h3>1.3 BEP 15 UDP Tracker Binary Wire Layout</h3>
+      <p>HTTP trackers suffer from TCP 3-way handshake overhead and HTTP header bloat. BEP 15 cuts tracker bandwidth by ~80% using stateless UDP datagrams with an anti-spoofing 64-bit <code class="inline">connection_id</code> cookie.</p>
+
+      <table class="spec-table">
+        <thead>
+          <tr>
+            <th>Packet Type</th>
+            <th>Byte Offset</th>
+            <th>Type / Endianness</th>
+            <th>Field Name</th>
+            <th>Expected Value / Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Connect Req</strong> (16 B)</td>
+            <td>0..7<br>8..11<br>12..15</td>
+            <td><code class="inline">uint64 BE</code><br><code class="inline">uint32 BE</code><br><code class="inline">uint32 BE</code></td>
+            <td><code class="inline">protocol_id</code><br><code class="inline">action</code><br><code class="inline">transaction_id</code></td>
+            <td>Magic constant <code class="inline">0x41727101980</code><br><code class="inline">0</code> (Connect)<br>Client-generated CSPRNG nonce</td>
+          </tr>
+          <tr>
+            <td><strong>Connect Resp</strong> (16 B)</td>
+            <td>0..3<br>4..7<br>8..15</td>
+            <td><code class="inline">uint32 BE</code><br><code class="inline">uint32 BE</code><br><code class="inline">uint64 BE</code></td>
+            <td><code class="inline">action</code><br><code class="inline">transaction_id</code><br><code class="inline">connection_id</code></td>
+            <td><code class="inline">0</code> (Connect)<br>Echoed client <code class="inline">transaction_id</code><br>HMAC token valid for 120 seconds</td>
+          </tr>
+          <tr>
+            <td><strong>Announce Req</strong> (98 B)</td>
+            <td>0..7<br>8..11<br>12..15<br>16..35<br>36..55<br>56..63<br>64..71<br>72..79<br>80..83<br>84..87<br>88..91<br>92..95<br>96..97</td>
+            <td><code class="inline">uint64 BE</code><br><code class="inline">uint32 BE</code><br><code class="inline">uint32 BE</code><br><code class="inline">uint8[20]</code><br><code class="inline">uint8[20]</code><br><code class="inline">int64 BE</code><br><code class="inline">int64 BE</code><br><code class="inline">int64 BE</code><br><code class="inline">uint32 BE</code><br><code class="inline">uint32 BE</code><br><code class="inline">uint32 BE</code><br><code class="inline">int32 BE</code><br><code class="inline">uint16 BE</code></td>
+            <td><code class="inline">connection_id</code><br><code class="inline">action</code><br><code class="inline">transaction_id</code><br><code class="inline">info_hash</code><br><code class="inline">peer_id</code><br><code class="inline">downloaded</code><br><code class="inline">left</code><br><code class="inline">uploaded</code><br><code class="inline">event</code><br><code class="inline">ip_address</code><br><code class="inline">key</code><br><code class="inline">num_want</code><br><code class="inline">port</code></td>
+            <td>Verified token from Connect Resp<br><code class="inline">1</code> (Announce)<br>Fresh client nonce<br>20-byte SHA-1 swarm identifier<br>20-byte client ID<br>Bytes downloaded this session<br>Bytes remaining (0 = Seeder)<br>Bytes uploaded this session<br>0:None, 1:Completed, 2:Started, 3:Stopped<br>0 (Use UDP source IP)<br>Client secret key for NAT roaming<br>Max peers requested (-1 = default 50)<br>Listening TCP/uTP port</td>
+          </tr>
+          <tr>
+            <td><strong>Announce Resp</strong> (20+6N B)</td>
+            <td>0..3<br>4..7<br>8..11<br>12..15<br>16..19<br>20..20+6N</td>
+            <td><code class="inline">uint32 BE</code><br><code class="inline">uint32 BE</code><br><code class="inline">uint32 BE</code><br><code class="inline">uint32 BE</code><br><code class="inline">uint32 BE</code><br><code class="inline">uint8[6*N]</code></td>
+            <td><code class="inline">action</code><br><code class="inline">transaction_id</code><br><code class="inline">interval</code><br><code class="inline">leechers</code><br><code class="inline">seeders</code><br><code class="inline">peers</code></td>
+            <td><code class="inline">1</code> (Announce)<br>Echoed <code class="inline">transaction_id</code><br>Seconds until next announce (e.g., 1800)<br>Incomplete count<br>Complete count<br>Packed 6-byte <code class="inline">[IP:4][Port:2]</code> array</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ANIMATED SVG: BEP 15 UDP + HTTP ANNOUNCE STATE MACHINE -->
+      <div class="diagram-wrapper">
+        <svg class="flow-svg" viewBox="0 0 920 340" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#00f59b"/>
+            </marker>
+            <marker id="arrowCyan" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#00d2ff"/>
+            </marker>
+            <marker id="arrowAmber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#ffb84d"/>
+            </marker>
+          </defs>
+
+          <!-- Background Grid -->
+          <rect width="920" height="340" fill="#080a0d"/>
+          
+          <!-- Peer Node -->
+          <rect x="30" y="40" width="160" height="260" rx="6" fill="#13161c" stroke="#00f59b" stroke-width="1.5" class="node-glow"/>
+          <text x="110" y="70" fill="#00f59b" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">BITTORRENT PEER</text>
+          <text x="110" y="92" fill="#8892b0" font-family="monospace" font-size="11" text-anchor="middle">UDP / TCP Socket</text>
+          <line x1="50" y1="108" x2="170" y2="108" stroke="#222630"/>
+          <text x="110" y="135" fill="#d8dee9" font-family="monospace" font-size="10" text-anchor="middle">1. Gen tx_id (32b)</text>
+          <text x="110" y="185" fill="#d8dee9" font-family="monospace" font-size="10" text-anchor="middle">2. Cache conn_id</text>
+          <text x="110" y="235" fill="#d8dee9" font-family="monospace" font-size="10" text-anchor="middle">3. Send 98B Announce</text>
+          <text x="110" y="280" fill="#00f59b" font-family="monospace" font-size="10" text-anchor="middle">4. Parse 6N Stride</text>
+
+          <!-- Tracker Engine -->
+          <rect x="410" y="40" width="210" height="260" rx="6" fill="#13161c" stroke="#00d2ff" stroke-width="1.5"/>
+          <text x="515" y="70" fill="#00d2ff" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle">TRACKER CORE ENGINE</text>
+          <text x="515" y="92" fill="#8892b0" font-family="monospace" font-size="11" text-anchor="middle">Zero-Alloc Packet Router</text>
+          <line x1="430" y1="108" x2="600" y2="108" stroke="#222630"/>
+          <text x="515" y="135" fill="#d8dee9" font-family="monospace" font-size="10" text-anchor="middle">Verify Magic 0x41727101980</text>
+          <text x="515" y="185" fill="#ffb84d" font-family="monospace" font-size="10" text-anchor="middle">HMAC-SHA256(IP, Secret, T)</text>
+          <text x="515" y="235" fill="#d8dee9" font-family="monospace" font-size="10" text-anchor="middle">Validate Token &amp; Upsert</text>
+          <text x="515" y="280" fill="#00d2ff" font-family="monospace" font-size="10" text-anchor="middle">Sample K Random Peers</text>
+
+          <!-- Swarm Memory Index -->
+          <rect x="720" y="75" width="170" height="190" rx="6" fill="#13161c" stroke="#ffb84d" stroke-width="1.5"/>
+          <text x="805" y="105" fill="#ffb84d" font-family="monospace" font-size="12" font-weight="bold" text-anchor="middle">SWARM HASH TABLE</text>
+          <text x="805" y="125" fill="#8892b0" font-family="monospace" font-size="10" text-anchor="middle">Key: InfoHash (20B)</text>
+          <rect x="735" y="142" width="140" height="45" rx="3" fill="#0a0c0e" stroke="#222630"/>
+          <text x="805" y="160" fill="#00f59b" font-family="monospace" font-size="10" text-anchor="middle">Seeders Set (Left=0)</text>
+          <text x="805" y="176" fill="#8892b0" font-family="monospace" font-size="9" text-anchor="middle">Packed uint64 [IP|Port]</text>
+          <rect x="735" y="198" width="140" height="45" rx="3" fill="#0a0c0e" stroke="#222630"/>
+          <text x="805" y="216" fill="#00d2ff" font-family="monospace" font-size="10" text-anchor="middle">Leechers Set (Left&gt;0)</text>
+          <text x="805" y="232" fill="#8892b0" font-family="monospace" font-size="9" text-anchor="middle">TTL Eviction Wheel</text>
+
+          <!-- Animated Packet Lines -->
+          <!-- Step 1: Connect Req -->
+          <line x1="190" y1="130" x2="404" y2="130" stroke="#00f59b" stroke-width="2" class="pulse-path" marker-end="url(#arrowGreen)"/>
+          <text x="297" y="122" fill="#00f59b" font-family="monospace" font-size="10" text-anchor="middle">1. Connect [0x4172.. | act=0 | tx]</text>
+
+          <!-- Step 2: Connect Resp -->
+          <line x1="404" y1="180" x2="190" y2="180" stroke="#00d2ff" stroke-width="2" class="pulse-path" marker-end="url(#arrowCyan)"/>
+          <text x="297" y="172" fill="#00d2ff" font-family="monospace" font-size="10" text-anchor="middle">2. ConnResp [act=0 | tx | conn_id]</text>
+
+          <!-- Step 3: Announce Req -->
+          <line x1="190" y1="230" x2="404" y2="230" stroke="#00f59b" stroke-width="2" class="pulse-fast" marker-end="url(#arrowGreen)"/>
+          <text x="297" y="222" fill="#00f59b" font-family="monospace" font-size="10" text-anchor="middle">3. Announce [conn_id | info_hash]</text>
+
+          <!-- Step 3b: Upsert Swarm -->
+          <line x1="620" y1="210" x2="714" y2="210" stroke="#ffb84d" stroke-width="2" class="pulse-path" marker-end="url(#arrowAmber)"/>
+          <line x1="714" y1="245" x2="620" y2="245" stroke="#ffb84d" stroke-width="2" class="pulse-path" marker-end="url(#arrowAmber)"/>
+
+          <!-- Step 4: Announce Resp -->
+          <line x1="404" y1="280" x2="190" y2="280" stroke="#00d2ff" stroke-width="2" class="pulse-fast" marker-end="url(#arrowCyan)"/>
+          <text x="297" y="272" fill="#00d2ff" font-family="monospace" font-size="10" text-anchor="middle">4. Peers [interval | S/L | 6*N B]</text>
+        </svg>
+        <div class="diagram-caption">Figure 1.1: BEP 15 Stateless HMAC Cookie Handshake & Zero-Allocation Swarm Upsert Pipeline</div>
+      </div>
+    </div>
+  </details>
+
+  <!-- =====================================================================
+       MODULE 02: C# .NET 8 HIGH-PERFORMANCE TRACKER
+  ====================================================================== -->
+  <details class="module" id="mod-2" open>
+    <summary class="module-header">
+      <div class="module-header-left">
+        <span class="mod-index">MOD 02</span>
+        <span>C# .NET 8 High-Performance Tracker (Span&lt;byte&gt;, BinaryPrimitives, UDP & HTTP)</span>
+      </div>
+      <span class="chevron">&#9654;</span>
+    </summary>
+    <div class="module-body">
+      <p>To handle 100,000+ announces per second without triggering Gen-2 Garbage Collection pauses, our C# .NET 8 tracker eliminates string allocations on the hot path. We represent the 20-byte <code class="inline">InfoHash</code> as a custom <code class="inline">readonly record struct</code> implementing <code class="inline">IEquatable&lt;InfoHash&gt;</code> over three <code class="inline">ulong</code>/uint fields, and pack each IPv4 peer endpoint + state into a single 64-bit integer (<code class="inline">ulong</code>).</p>
+
+      <div class="code-container">
+        <div class="code-toolbar">
+          <span class="lang-tag">C# .NET 8 // HighPerfTracker.cs (Complete Self-Contained UDP + HTTP + Bencode Engine)</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+        </div>
+<pre><code>using System;
+using System.Buffers;
+using System.Buffers.Binary;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace SwarmNexus.Tracker
+{
+    /// &lt;summary&gt;
+    /// Zero-heap-allocation 20-byte SHA-1 InfoHash value type.
+    /// Layout: 8 + 8 + 4 = 20 bytes exact.
+    /// &lt;/summary&gt;
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public readonly struct InfoHash : IEquatable&lt;InfoHash&gt;
+    {
+        public readonly ulong Part1;
+        public readonly ulong Part2;
+        public readonly uint Part3;
+
+        public InfoHash(ReadOnlySpan&lt;byte&gt; bytes)
+        {
+            if (bytes.Length != 20)
+                throw new ArgumentException("InfoHash must be exactly 20 bytes.");
+            Part1 = BinaryPrimitives.ReadUInt64BigEndian(bytes.Slice(0, 8));
+            Part2 = BinaryPrimitives.ReadUInt64BigEndian(bytes.Slice(8, 8));
+            Part3 = BinaryPrimitives.ReadUInt32BigEndian(bytes.Slice(16, 4));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Equals(InfoHash other) =&gt;
+            Part1 == other.Part1 &amp;&amp; Part2 == other.Part2 &amp;&amp; Part3 == other.Part3;
+
+        public override bool Equals(object? obj) =&gt; obj is InfoHash other &amp;&amp; Equals(other);
+
+        public override int GetHashCode() =&gt; HashCode.Combine(Part1, Part2, Part3);
+
+        public override string ToString() =&gt; $"{Part1:x16}{Part2:x16}{Part3:x8}";
+    }
+
+    /// &lt;summary&gt;
+    /// Packed Peer State:
+    /// EndpointKey (ulong): [IPv4: 32 bits][Port: 16 bits]
+    /// Metadata: LastSeen Unix Seconds + IsSeeder flag.
+    /// &lt;/summary&gt;
+    public struct PeerState
+    {
+        public uint IpBigEndian;
+        public ushort PortBigEndian;
+        public long LastSeenUnixSec;
+        public bool IsSeeder;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly void WriteCompact(Span&lt;byte&gt; dest)
+        {
+            BinaryPrimitives.WriteUInt32BigEndian(dest.Slice(0, 4), IpBigEndian);
+            BinaryPrimitives.WriteUInt16BigEndian(dest.Slice(4, 2), PortBigEndian);
+        }
+    }
+
+    public sealed class SwarmBucket
+    {
+        // Key: (ulong)IpBigEndian &lt;&lt; 16 | PortBigEndian
+        public readonly ConcurrentDictionary&lt;ulong, PeerState&gt; Peers = new();
+        public int SeedersCount;
+        public int LeechersCount;
+        public int CompletedDownloads;
+
+        public void UpsertPeer(uint ipBe, ushort portBe, long left, int eventType)
+        {
+            ulong key = ((ulong)ipBe &lt;&lt; 16) | portBe;
+            long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            // eventType: 0=none, 1=completed, 2=started, 3=stopped
+            if (eventType == 3)
+            {
+                if (Peers.TryRemove(key, out _))
+                    RecalculateCounts();
+                return;
+            }
+
+            if (eventType == 1)
+                Interlocked.Increment(ref CompletedDownloads);
+
+            Peers[key] = new PeerState
+            {
+                IpBigEndian = ipBe,
+                PortBigEndian = portBe,
+                LastSeenUnixSec = now,
+                IsSeeder = (left == 0)
+            };
+
+            RecalculateCounts();
+        }
+
+        public void RecalculateCounts()
+        {
+            int s = 0, l = 0;
+            long cutoff = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 2400; // 40 min TTL
+            foreach (var kvp in Peers)
+            {
+                if (kvp.Value.LastSeenUnixSec &lt; cutoff)
+                {
+                    Peers.TryRemove(kvp.Key, out _);
+                    continue;
+                }
+                if (kvp.Value.IsSeeder) s++;
+                else l++;
+            }
+            Volatile.Write(ref SeedersCount, s);
+            Volatile.Write(ref LeechersCount, l);
+        }
+
+        public int SampleCompactPeers(Span&lt;byte&gt; buffer, int maxPeers)
+        {
+            int count = 0;
+            foreach (var kvp in Peers)
+            {
+                if (count &gt;= maxPeers || (count + 1) * 6 &gt; buffer.Length)
+                    break;
+                kvp.Value.WriteCompact(buffer.Slice(count * 6, 6));
+                count++;
+            }
+            return count;
+        }
+    }
+
+    /// &lt;summary&gt;
+    /// Zero-Allocation Span-based Bencode Parser &amp; Writer for HTTP Tracker Responses
+    /// &lt;/summary&gt;
+    public static class BencodeEngine
+    {
+        public static byte[] BuildCompactAnnounceResponse(
+            int interval, int complete, int incomplete, ReadOnlySpan&lt;byte&gt; compactPeers)
+        {
+            using var ms = new MemoryStream(128 + compactPeers.Length);
+            // Keys strictly sorted lexicographically: complete, incomplete, interval, peers
+            WriteAscii(ms, $"d8:completei{complete}e10:incompletei{incomplete}e8:intervali{interval}e5:peers{compactPeers.Length}:");
+            ms.Write(compactPeers);
+            ms.WriteByte((byte)'e');
+            return ms.ToArray();
+        }
+
+        public static byte[] BuildFailureResponse(string reason)
+        {
+            byte[] reasonBytes = Encoding.UTF8.GetBytes(reason);
+            using var ms = new MemoryStream(32 + reasonBytes.Length);
+            WriteAscii(ms, $"d14:failure reason{reasonBytes.Length}:");
+            ms.Write(reasonBytes);
+            ms.WriteByte((byte)'e');
+            return ms.ToArray();
+        }
+
+        private static void WriteAscii(Stream s, string text)
+        {
+            Span&lt;byte&gt; buf = stackalloc byte[text.Length];
+            Encoding.ASCII.GetBytes(text, buf);
+            s.Write(buf);
+        }
+    }
+
+    /// &lt;summary&gt;
+    /// Dual-Stack BEP 15 UDP &amp; BEP 03/23 HTTP Tracker Server
+    /// &lt;/summary&gt;
+    public sealed class DualBitTorrentTracker
+    {
+        private const ulong BEP15_MAGIC = 0x41727101980UL;
+        private readonly ConcurrentDictionary&lt;InfoHash, SwarmBucket&gt; _swarms = new();
+        private readonly byte[] _hmacSecret = RandomNumberGenerator.GetBytes(32);
+        private readonly int _port;
+
+        public DualBitTorrentTracker(int port = 6969) =&gt; _port = port;
+
+        /// &lt;summary&gt;
+        /// Generates a stateless anti-spoofing 64-bit connection_id bound to Client IP and 60s time bucket.
+        /// &lt;/summary&gt;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ulong ComputeConnectionId(IPEndPoint remoteEp, long timeWindow)
+        {
+            Span&lt;byte&gt; input = stackalloc byte[24];
+            remoteEp.Address.TryWriteBytes(input.Slice(0, 16), out int written);
+            BinaryPrimitives.WriteInt64BigEndian(input.Slice(16, 8), timeWindow);
+
+            Span&lt;byte&gt; hash = stackalloc byte[32];
+            HMACSHA256.HashData(_hmacSecret, input.Slice(0, written + 8), hash);
+            return BinaryPrimitives.ReadUInt64BigEndian(hash.Slice(0, 8));
+        }
+
+        private bool ValidateConnectionId(IPEndPoint remoteEp, ulong connId)
+        {
+            long currentBucket = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 60;
+            return connId == ComputeConnectionId(remoteEp, currentBucket)
+                || connId == ComputeConnectionId(remoteEp, currentBucket - 1);
+        }
+
+        public async Task RunUdpServerAsync(CancellationToken ct)
+        {
+            using var udpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            udpSocket.Bind(new IPEndPoint(IPAddress.Any, _port));
+            Console.WriteLine($"[UDP BEP-15] Listening on 0.0.0.0:{_port}");
+
+            byte[] recvBuf = ArrayPool&lt;byte&gt;.Shared.Rent(2048);
+            byte[] sendBuf = ArrayPool&lt;byte&gt;.Shared.Rent(2048);
+
+            try
+            {
+                EndPoint remoteEp = new IPEndPoint(IPAddress.Any, 0);
+                while (!ct.IsCancellationRequested)
+                {
+                    var res = await udpSocket.ReceiveFromAsync(recvBuf, SocketFlags.None, remoteEp, ct);
+                    int len = res.ReceivedBytes;
+                    if (len &lt; 16) continue;
+
+                    var clientEp = (IPEndPoint)res.RemoteEndPoint;
+                    int respLen = ProcessUdpPacket(recvBuf.AsSpan(0, len), sendBuf.AsSpan(), clientEp);
+                    if (respLen &gt; 0)
+                    {
+                        await udpSocket.SendToAsync(
+                            new ArraySegment&lt;byte&gt;(sendBuf, 0, respLen),
+                            SocketFlags.None,
+                            clientEp,
+                            ct);
+                    }
+                }
+            }
+            finally
+            {
+                ArrayPool&lt;byte&gt;.Shared.Return(recvBuf);
+                ArrayPool&lt;byte&gt;.Shared.Return(sendBuf);
+            }
+        }
+
+        private int ProcessUdpPacket(ReadOnlySpan&lt;byte&gt; req, Span&lt;byte&gt; resp, IPEndPoint clientEp)
+        {
+            ulong connIdOrMagic = BinaryPrimitives.ReadUInt64BigEndian(req.Slice(0, 8));
+            uint action = BinaryPrimitives.ReadUInt32BigEndian(req.Slice(8, 4));
+            uint txId = BinaryPrimitives.ReadUInt32BigEndian(req.Slice(12, 4));
+
+            // ACTION 0: CONNECT
+            if (action == 0 &amp;&amp; connIdOrMagic == BEP15_MAGIC)
+            {
+                long bucket = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 60;
+                ulong issuedConnId = ComputeConnectionId(clientEp, bucket);
+
+                BinaryPrimitives.WriteUInt32BigEndian(resp.Slice(0, 4), 0); // action = 0
+                BinaryPrimitives.WriteUInt32BigEndian(resp.Slice(4, 4), txId);
+                BinaryPrimitives.WriteUInt64BigEndian(resp.Slice(8, 8), issuedConnId);
+                return 16;
+            }
+
+            // Validate stateless HMAC token for Announce (1) or Scrape (2)
+            if (!ValidateConnectionId(clientEp, connIdOrMagic))
+            {
+                return WriteUdpError(resp, txId, "Invalid or expired connection_id token.");
+            }
+
+            // ACTION 1: ANNOUNCE (98 bytes minimum)
+            if (action == 1 &amp;&amp; req.Length &gt;= 98)
+            {
+                var infoHash = new InfoHash(req.Slice(16, 20));
+                long left = BinaryPrimitives.ReadInt64BigEndian(req.Slice(64, 8));
+                int eventType = (int)BinaryPrimitives.ReadUInt32BigEndian(req.Slice(80, 4));
+                int numWant = BinaryPrimitives.ReadInt32BigEndian(req.Slice(92, 4));
+                ushort peerPort = BinaryPrimitives.ReadUInt16BigEndian(req.Slice(96, 2));
+
+                if (numWant &lt;= 0 || numWant &gt; 100) numWant = 50;
+
+                Span&lt;byte&gt; ipBytes = stackalloc byte[4];
+                clientEp.Address.MapToIPv4().TryWriteBytes(ipBytes, out _);
+                uint ipBe = BinaryPrimitives.ReadUInt32BigEndian(ipBytes);
+
+                var swarm = _swarms.GetOrAdd(infoHash, _ =&gt; new SwarmBucket());
+                swarm.UpsertPeer(ipBe, peerPort, left, eventType);
+
+                BinaryPrimitives.WriteUInt32BigEndian(resp.Slice(0, 4), 1); // action = 1
+                BinaryPrimitives.WriteUInt32BigEndian(resp.Slice(4, 4), txId);
+                BinaryPrimitives.WriteUInt32BigEndian(resp.Slice(8, 4), 1800); // interval
+                BinaryPrimitives.WriteUInt32BigEndian(resp.Slice(12, 4), (uint)swarm.LeechersCount);
+                BinaryPrimitives.WriteUInt32BigEndian(resp.Slice(16, 4), (uint)swarm.SeedersCount);
+
+                int peersWritten = swarm.SampleCompactPeers(resp.Slice(20), numWant);
+                return 20 + (peersWritten * 6);
+            }
+
+            // ACTION 2: SCRAPE (16 + 20*N bytes)
+            if (action == 2 &amp;&amp; req.Length &gt;= 36)
+            {
+                BinaryPrimitives.WriteUInt32BigEndian(resp.Slice(0, 4), 2);
+                BinaryPrimitives.WriteUInt32BigEndian(resp.Slice(4, 4), txId);
+                int offset = 8;
+                for (int pos = 16; pos + 20 &lt;= req.Length &amp;&amp; offset + 12 &lt;= resp.Length; pos += 20)
+                {
+                    var hash = new InfoHash(req.Slice(pos, 20));
+                    if (_swarms.TryGetValue(hash, out var swarm))
+                    {
+                        BinaryPrimitives.WriteUInt32BigEndian(resp.Slice(offset, 4), (uint)swarm.SeedersCount);
+                        BinaryPrimitives.WriteUInt32BigEndian(resp.Slice(offset + 4, 4), (uint)swarm.CompletedDownloads);
+                        BinaryPrimitives.WriteUInt32BigEndian(resp.Slice(offset + 8, 4), (uint)swarm.LeechersCount);
+                    }
+                    else
+                    {
+                        resp.Slice(offset, 12).Clear();
+                    }
+                    offset += 12;
+                }
+                return offset;
+            }
+
+            return WriteUdpError(resp, txId, "Unsupported BEP-15 action.");
+        }
+
+        private static int WriteUdpError(Span&lt;byte&gt; resp, uint txId, string msg)
+        {
+            BinaryPrimitives.WriteUInt32BigEndian(resp.Slice(0, 4), 3); // action = 3 (Error)
+            BinaryPrimitives.WriteUInt32BigEndian(resp.Slice(4, 4), txId);
+            int len = Encoding.ASCII.GetBytes(msg, resp.Slice(8));
+            return 8 + len;
+        }
+    }
+}</code></pre>
+      </div>
+
+      <details class="sub-panel">
+        <summary class="sub-header">
+          <span>[+] URL-Encoded Raw Byte InfoHash Parsing in C# HTTP Trackers</span>
+          <span>BEP 03 HTTP Spec</span>
+        </summary>
+        <div class="sub-body">
+          <p>A frequent bug in HTTP trackers is calling <code class="inline">Uri.UnescapeDataString()</code> or <code class="inline">HttpUtility.UrlDecode()</code> into a <code class="inline">string</code>, which corrupts arbitrary binary bytes above <code class="inline">0x7F</code> into UTF-8 replacement characters (<code class="inline">0xFFFD</code>). Always decode URL percent-sequences directly into a <code class="inline">Span&lt;byte&gt;</code>:</p>
+          <div class="code-container">
+            <div class="code-toolbar">
+              <span class="lang-tag">C# // RawUrlByteDecoder.cs</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+            </div>
+<pre><code>public static bool TryDecodeUrlRawBytes(ReadOnlySpan&lt;char&gt; urlParam, Span&lt;byte&gt; output, out int bytesWritten)
+{
+    bytesWritten = 0;
+    for (int i = 0; i &lt; urlParam.Length; i++)
+    {
+        if (bytesWritten &gt;= output.Length) return false;
+        char c = urlParam[i];
+        if (c == '%' &amp;&amp; i + 2 &lt; urlParam.Length)
+        {
+            int hi = HexVal(urlParam[i + 1]);
+            int lo = HexVal(urlParam[i + 2]);
+            if (hi &lt; 0 || lo &lt; 0) return false;
+            output[bytesWritten++] = (byte)((hi &lt;&lt; 4) | lo);
+            i += 2;
+        }
+        else if (c == '+')
+        {
+            output[bytesWritten++] = (byte)' ';
+        }
+        else
+        {
+            output[bytesWritten++] = (byte)(c &amp; 0xFF);
+        }
+    }
+    return true;
+
+    static int HexVal(char ch) =&gt;
+        ch &gt;= '0' &amp;&amp; ch &lt;= '9' ? ch - '0' :
+        ch &gt;= 'a' &amp;&amp; ch &lt;= 'f' ? ch - 'a' + 10 :
+        ch &gt;= 'A' &amp;&amp; ch &lt;= 'F' ? ch - 'A' + 10 : -1;
+}</code></pre>
+          </div>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <!-- =====================================================================
+       MODULE 03: PYTHON 3.12+ ASYNCIO TRACKER
+  ====================================================================== -->
+  <details class="module" id="mod-3" open>
+    <summary class="module-header">
+      <div class="module-header-left">
+        <span class="mod-index">MOD 03</span>
+        <span>Python 3.12+ Asyncio Tracker (DatagramProtocol, Struct Packing & HTTP Server)</span>
+      </div>
+      <span class="chevron">&#9654;</span>
+    </summary>
+    <div class="module-body">
+      <p>Using Python's <code class="inline">asyncio.DatagramProtocol</code> alongside <code class="inline">struct.pack_into</code> and <code class="inline">memoryview</code>, a single-threaded Python 3.12/3.14 event loop can saturate a gigabit link of UDP BEP 15 announces without external dependencies.</p>
+
+      <div class="code-container">
+        <div class="code-toolbar">
+          <span class="lang-tag">Python 3.12+ // async_tracker.py (Zero-Dependency UDP + HTTP Tracker)</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+        </div>
+<pre><code>#!/usr/bin/env python3
+"""
+High-Performance Asyncio BitTorrent Tracker (BEP 03 HTTP + BEP 15 UDP + BEP 23 Compact)
+Compatible with Python 3.12 / 3.14+. Zero third-party library dependencies.
+"""
+import asyncio
+import hashlib
+import hmac
+import ipaddress
+import os
+import random
+import socket
+import struct
+import time
+import urllib.parse
+from dataclasses import dataclass, field
+from typing import Dict, Tuple, List, Any
+
+BEP15_MAGIC = 0x41727101980
+ANNOUNCE_INTERVAL = 1800
+PEER_TTL_SECONDS = 2400
+
+
+def bencode_encode(val: Any) -&gt; bytes:
+    """Strict RFC/BEP-03 deterministic Bencode serializer."""
+    if isinstance(val, int):
+        return f"i{val}e".encode("ascii")
+    elif isinstance(val, bytes):
+        return f"{len(val)}:".encode("ascii") + val
+    elif isinstance(val, str):
+        raw = val.encode("utf-8")
+        return f"{len(raw)}:".encode("ascii") + raw
+    elif isinstance(val, list):
+        return b"l" + b"".join(bencode_encode(item) for item in val) + b"e"
+    elif isinstance(val, dict):
+        # Sort keys strictly by raw byte representation
+        items = sorted(
+            ((k.encode("utf-8") if isinstance(k, str) else k, v) for k, v in val.items()),
+            key=lambda x: x[0]
+        )
+        out = bytearray(b"d")
+        for k_bytes, v_item in items:
+            out.extend(f"{len(k_bytes)}:".encode("ascii"))
+            out.extend(k_bytes)
+            out.extend(bencode_encode(v_item))
+        out.append(ord("e"))
+        return bytes(out)
+    raise TypeError(f"Unsupported Bencode type: {type(val)}")
+
+
+@dataclass(slots=True)
+class PeerEntry:
+    compact_addr: bytes  # 6 bytes: 4B IPv4 + 2B Port
+    is_seeder: bool
+    last_seen: float
+
+
+@dataclass
+class SwarmState:
+    peers: Dict[bytes, PeerEntry] = field(default_factory=dict)
+    completed: int = 0
+    seeders: int = 0
+    leechers: int = 0
+
+    def upsert(self, compact_addr: bytes, left: int, event: int) -&gt; None:
+        now = time.monotonic()
+        # event: 0=none, 1=completed, 2=started, 3=stopped
+        if event == 3:
+            self.peers.pop(compact_addr, None)
+            self._recount(now)
+            return
+
+        if event == 1:
+            self.completed += 1
+
+        self.peers[compact_addr] = PeerEntry(
+            compact_addr=compact_addr,
+            is_seeder=(left == 0),
+            last_seen=now
+        )
+        self._recount(now)
+
+    def _recount(self, now: float) -&gt; None:
+        cutoff = now - PEER_TTL_SECONDS
+        expired = [k for k, p in self.peers.items() if p.last_seen &lt; cutoff]
+        for k in expired:
+            del self.peers[k]
+
+        s = sum(1 for p in self.peers.values() if p.is_seeder)
+        self.seeders = s
+        self.leechers = len(self.peers) - s
+
+    def sample_compact(self, num_want: int) -&gt; bytes:
+        pool = list(self.peers.keys())
+        if len(pool) &gt; num_want:
+            pool = random.sample(pool, num_want)
+        return b"".join(pool)
+
+
+class SwarmRegistry:
+    def __init__(self) -&gt; None:
+        self.swarms: Dict[bytes, SwarmState] = {}
+        self.hmac_secret: bytes = os.urandom(32)
+
+    def get_or_create(self, info_hash: bytes) -&gt; SwarmState:
+        swarm = self.swarms.get(info_hash)
+        if swarm is None:
+            swarm = SwarmState()
+            self.swarms[info_hash] = swarm
+        return swarm
+
+    def make_connection_id(self, ip_str: str, time_bucket: int | None = None) -&gt; int:
+        if time_bucket is None:
+            time_bucket = int(time.time() // 60)
+        msg = f"{ip_str}:{time_bucket}".encode("ascii")
+        digest = hmac.new(self.hmac_secret, msg, hashlib.sha256).digest()
+        return struct.unpack("!Q", digest[:8])[0]
+
+    def verify_connection_id(self, ip_str: str, conn_id: int) -&gt; bool:
+        bucket = int(time.time() // 60)
+        return (
+            conn_id == self.make_connection_id(ip_str, bucket)
+            or conn_id == self.make_connection_id(ip_str, bucket - 1)
+        )
+
+
+class Bep15UdpProtocol(asyncio.DatagramProtocol):
+    def __init__(self, registry: SwarmRegistry) -&gt; None:
+        self.registry = registry
+        self.transport: asyncio.DatagramTransport | None = None
+
+    def connection_made(self, transport: asyncio.BaseTransport) -&gt; None:
+        self.transport = transport  # type: ignore
+
+    def datagram_received(self, data: bytes, addr: Tuple[str, int]) -&gt; None:
+        if len(data) &lt; 16 or self.transport is None:
+            return
+
+        ip_str, src_port = addr[0], addr[1]
+        conn_id, action, tx_id = struct.unpack_from("!QII", data, 0)
+
+        # Action 0: Connect
+        if action == 0 and conn_id == BEP15_MAGIC:
+            token = self.registry.make_connection_id(ip_str)
+            resp = struct.pack("!IIQ", 0, tx_id, token)
+            self.transport.sendto(resp, addr)
+            return
+
+        # Verify stateless anti-spoofing token
+        if not self.registry.verify_connection_id(ip_str, conn_id):
+            err = b"Invalid or expired BEP-15 connection token"
+            self.transport.sendto(struct.pack("!II", 3, tx_id) + err, addr)
+            return
+
+        # Action 1: Announce (98 bytes)
+        if action == 1 and len(data) &gt;= 98:
+            (
+                info_hash,
+                peer_id,
+                downloaded,
+                left,
+                uploaded,
+                event,
+                ip_override,
+                key,
+                num_want,
+                port
+            ) = struct.unpack_from("!20s20sqqqIIIiH", data, 16)
+
+            if num_want &lt;= 0 or num_want &gt; 100:
+                num_want = 50
+
+            try:
+                ip_bytes = socket.inet_aton(ip_str)
+            except OSError:
+                return
+
+            compact_peer = ip_bytes + struct.pack("!H", port)
+            swarm = self.registry.get_or_create(info_hash)
+            swarm.upsert(compact_peer, left, event)
+
+            peers_blob = swarm.sample_compact(num_want)
+            header = struct.pack(
+                "!IIIII", 1, tx_id, ANNOUNCE_INTERVAL, swarm.leechers, swarm.seeders
+            )
+            self.transport.sendto(header + peers_blob, addr)
+            return
+
+        # Action 2: Scrape
+        if action == 2 and len(data) &gt;= 36:
+            out = bytearray(struct.pack("!II", 2, tx_id))
+            offset = 16
+            while offset + 20 &lt;= len(data):
+                ih = data[offset:offset + 20]
+                sw = self.registry.swarms.get(ih)
+                if sw:
+                    out.extend(struct.pack("!III", sw.seeders, sw.completed, sw.leechers))
+                else:
+                    out.extend(b"\x00" * 12)
+                offset += 20
+            self.transport.sendto(bytes(out), addr)
+
+
+async def handle_http_client(
+    reader: asyncio.StreamReader,
+    writer: asyncio.StreamWriter,
+    registry: SwarmRegistry
+) -&gt; None:
+    try:
+        req_line = await asyncio.wait_for(reader.readline(), timeout=5.0)
+        if not req_line:
+            return
+        parts = req_line.decode("latin-1").split(" ")
+        if len(parts) &lt; 2:
+            return
+
+        path_and_query = parts[1]
+        peername = writer.get_extra_info("peername")
+        client_ip = peername[0] if peername else "127.0.0.1"
+
+        # Consume remaining HTTP headers
+        while True:
+            hdr = await reader.readline()
+            if not hdr or hdr == b"\r\n":
+                break
+
+        parsed = urllib.parse.urlsplit(path_and_query)
+        if parsed.path != "/announce":
+            payload = bencode_encode({"failure reason": "Endpoint not found"})
+        else:
+            # Parse raw bytes from query string (critical for binary info_hash)
+            qs = urllib.parse.parse_qs(parsed.query, keep_blank_values=True, encoding="latin-1")
+            ih_raw = qs.get("info_hash", [""])[0].encode("latin-1")
+            port = int(qs.get("port", ["6881"])[0])
+            left = int(qs.get("left", ["1"])[0])
+            ev_str = qs.get("event", [""])[0]
+            ev_map = {"": 0, "completed": 1, "started": 2, "stopped": 3}
+            event = ev_map.get(ev_str, 0)
+
+            if len(ih_raw) != 20:
+                payload = bencode_encode({"failure reason": "Invalid 20-byte info_hash"})
+            else:
+                compact_peer = socket.inet_aton(client_ip) + struct.pack("!H", port)
+                swarm = registry.get_or_create(ih_raw)
+                swarm.upsert(compact_peer, left, event)
+                payload = bencode_encode({
+                    "interval": ANNOUNCE_INTERVAL,
+                    "complete": swarm.seeders,
+                    "incomplete": swarm.leechers,
+                    "peers": swarm.sample_compact(50)
+                })
+
+        http_resp = (
+            f"HTTP/1.1 200 OK\r\n"
+            f"Content-Type: text/plain\r\n"
+            f"Content-Length: {len(payload)}\r\n"
+            f"Connection: close\r\n\r\n"
+        ).encode("ascii") + payload
+        writer.write(http_resp)
+        await writer.drain()
+    except Exception:
+        pass
+    finally:
+        writer.close()
+
+
+async def main(host: str = "0.0.0.0", port: int = 6969) -&gt; None:
+    registry = SwarmRegistry()
+    loop = asyncio.get_running_loop()
+
+    transport, _ = await loop.create_datagram_endpoint(
+        lambda: Bep15UdpProtocol(registry),
+        local_addr=(host, port)
+    )
+    http_server = await asyncio.start_server(
+        lambda r, w: handle_http_client(r, w, registry),
+        host, port
+    )
+    print(f"[Python AsyncTracker] UDP &amp; HTTP active on {host}:{port}")
+    try:
+        await asyncio.Future()
+    finally:
+        transport.close()
+        http_server.close()
+
+if __name__ == "__main__":
+    asyncio.run(main())</code></pre>
+      </div>
+    </div>
+  </details>
+
+  <!-- =====================================================================
+       MODULE 04: NODE.JS HYBRID SWARM ENGINE
+  ====================================================================== -->
+  <details class="module" id="mod-4" open>
+    <summary class="module-header">
+      <div class="module-header-left">
+        <span class="mod-index">MOD 04</span>
+        <span>Node.js Event-Driven Hybrid Tracker (UDP4, HTTP & WebTorrent WebRTC Signaling)</span>
+      </div>
+      <span class="chevron">&#9654;</span>
+    </summary>
+    <div class="module-body">
+      <p>Node.js excels at bridging traditional desktop BitTorrent clients (via <code class="inline">node:dgram</code> UDP and <code class="inline">node:http</code>) with browser-based WebTorrent peers using WebSockets to relay WebRTC SDP (<code class="inline">offer</code>/<code class="inline">answer</code>) payloads. Below is a complete zero-dependency Node.js implementation of the UDP and HTTP tracker core, plus the WebRTC JSON signaling state handler.</p>
+
+      <div class="code-container">
+        <div class="code-toolbar">
+          <span class="lang-tag">Node.js (ES2024) // tracker_node.mjs</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+        </div>
+<pre><code>import dgram from 'node:dgram';
+import http from 'node:http';
+import crypto from 'node:crypto';
+
+const BEP15_MAGIC = 0x41727101980n;
+const INTERVAL_SEC = 1800;
+const HMAC_SECRET = crypto.randomBytes(32);
+
+// Map&lt;infoHashHex, { peers: Map&lt;peerKeyHex, { buf: Buffer, seeder: boolean, ts: number }&gt;, completed: number }&gt;
+const swarms = new Map();
+
+function bencode(data) {
+  if (typeof data === 'number' || typeof data === 'bigint') {
+    return Buffer.from(`i${data}e`, 'ascii');
+  }
+  if (Buffer.isBuffer(data)) {
+    return Buffer.concat([Buffer.from(`${data.length}:`, 'ascii'), data]);
+  }
+  if (typeof data === 'string') {
+    const b = Buffer.from(data, 'utf8');
+    return Buffer.concat([Buffer.from(`${b.length}:`, 'ascii'), b]);
+  }
+  if (Array.isArray(data)) {
+    return Buffer.concat([Buffer.from('l'), ...data.map(bencode), Buffer.from('e')]);
+  }
+  if (data &amp;&amp; typeof data === 'object') {
+    const keys = Object.keys(data).sort();
+    const chunks = [Buffer.from('d')];
+    for (const k of keys) {
+      chunks.push(bencode(k), bencode(data[k]));
+    }
+    chunks.push(Buffer.from('e'));
+    return Buffer.concat(chunks);
+  }
+  throw new TypeError('Invalid Bencode input');
+}
+
+function makeConnectionId(ip, bucket = Math.floor(Date.now() / 60000)) {
+  const mac = crypto.createHmac('sha256', HMAC_SECRET)
+    .update(`${ip}:${bucket}`)
+    .digest();
+  return mac.readBigUInt64BE(0);
+}
+
+function verifyConnectionId(ip, connId) {
+  const b = Math.floor(Date.now() / 60000);
+  return connId === makeConnectionId(ip, b) || connId === makeConnectionId(ip, b - 1);
+}
+
+function packIpv4Port(ipStr, port) {
+  const octets = ipStr.replace(/^::ffff:/, '').split('.').map(Number);
+  if (octets.length !== 4 || octets.some(n =&gt; Number.isNaN(n) || n &lt; 0 || n &gt; 255)) {
+    return null;
+  }
+  const buf = Buffer.allocUnsafe(6);
+  buf[0] = octets[0];
+  buf[1] = octets[1];
+  buf[2] = octets[2];
+  buf[3] = octets[3];
+  buf.writeUInt16BE(port &amp; 0xffff, 4);
+  return buf;
+}
+
+function upsertSwarmPeer(infoHashHex, compactBuf, leftBigInt, eventCode) {
+  let swarm = swarms.get(infoHashHex);
+  if (!swarm) {
+    swarm = { peers: new Map(), completed: 0 };
+    swarms.set(infoHashHex, swarm);
+  }
+  const key = compactBuf.toString('hex');
+  if (eventCode === 3) {
+    swarm.peers.delete(key);
+  } else {
+    if (eventCode === 1) swarm.completed += 1;
+    swarm.peers.set(key, {
+      buf: compactBuf,
+      seeder: leftBigInt === 0n,
+      ts: Date.now()
+    });
+  }
+
+  let seeders = 0;
+  let leechers = 0;
+  const cutoff = Date.now() - 2400_000;
+  const activeBufs = [];
+
+  for (const [k, v] of swarm.peers.entries()) {
+    if (v.ts &lt; cutoff) {
+      swarm.peers.delete(k);
+      continue;
+    }
+    if (v.seeder) seeders++;
+    else leechers++;
+    if (activeBufs.length &lt; 50) activeBufs.push(v.buf);
+  }
+
+  return { seeders, leechers, completed: swarm.completed, peersBlob: Buffer.concat(activeBufs) };
+}
+
+// 1. UDP BEP-15 Server
+const udpServer = dgram.createSocket('udp4');
+
+udpServer.on('message', (msg, rinfo) =&gt; {
+  if (msg.length &lt; 16) return;
+  const connId = msg.readBigUInt64BE(0);
+  const action = msg.readUInt32BE(8);
+  const txId = msg.readUInt32BE(12);
+
+  // Action 0: Connect
+  if (action === 0 &amp;&amp; connId === BEP15_MAGIC) {
+    const resp = Buffer.allocUnsafe(16);
+    resp.writeUInt32BE(0, 0);
+    resp.writeUInt32BE(txId, 4);
+    resp.writeBigUInt64BE(makeConnectionId(rinfo.address), 8);
+    udpServer.send(resp, rinfo.port, rinfo.address);
+    return;
+  }
+
+  if (!verifyConnectionId(rinfo.address, connId)) return;
+
+  // Action 1: Announce
+  if (action === 1 &amp;&amp; msg.length &gt;= 98) {
+    const infoHashHex = msg.subarray(16, 36).toString('hex');
+    const left = msg.readBigInt64BE(64);
+    const event = msg.readUInt32BE(80);
+    const port = msg.readUInt16BE(96);
+
+    const compact = packIpv4Port(rinfo.address, port);
+    if (!compact) return;
+
+    const stats = upsertSwarmPeer(infoHashHex, compact, left, event);
+    const header = Buffer.allocUnsafe(20);
+    header.writeUInt32BE(1, 0);
+    header.writeUInt32BE(txId, 4);
+    header.writeUInt32BE(INTERVAL_SEC, 8);
+    header.writeUInt32BE(stats.leechers, 12);
+    header.writeUInt32BE(stats.seeders, 16);
+
+    udpServer.send(Buffer.concat([header, stats.peersBlob]), rinfo.port, rinfo.address);
+  }
+});
+
+// 2. HTTP Raw-Byte Query Parser &amp; Announce Endpoint
+function decodeRawPercentBytes(rawStr) {
+  const bytes = [];
+  for (let i = 0; i &lt; rawStr.length; i++) {
+    if (rawStr[i] === '%' &amp;&amp; i + 2 &lt; rawStr.length) {
+      bytes.push(parseInt(rawStr.slice(i + 1, i + 3), 16));
+      i += 2;
+    } else {
+      bytes.push(rawStr.charCodeAt(i) &amp; 0xff);
+    }
+  }
+  return Buffer.from(bytes);
+}
+
+const httpServer = http.createServer((req, res) =&gt; {
+  const [path, query = ''] = (req.url || '').split('?');
+  if (path !== '/announce') {
+    res.writeHead(404);
+    return res.end(bencode({ 'failure reason': 'Not found' }));
+  }
+
+  const params = {};
+  for (const pair of query.split('&amp;')) {
+    const [k, v = ''] = pair.split('=');
+    params[k] = v;
+  }
+
+  const ihBuf = decodeRawPercentBytes(params.info_hash || '');
+  if (ihBuf.length !== 20) {
+    res.writeHead(400);
+    return res.end(bencode({ 'failure reason': 'Invalid 20-byte info_hash' }));
+  }
+
+  const port = parseInt(params.port || '6881', 10);
+  const left = BigInt(params.left || '1');
+  const evMap = { started: 2, completed: 1, stopped: 3 };
+  const eventCode = evMap[params.event] || 0;
+
+  const compact = packIpv4Port(req.socket.remoteAddress || '127.0.0.1', port);
+  if (!compact) {
+    res.writeHead(400);
+    return res.end(bencode({ 'failure reason': 'IPv4 required' }));
+  }
+
+  const stats = upsertSwarmPeer(ihBuf.toString('hex'), compact, left, eventCode);
+  const body = bencode({
+    interval: INTERVAL_SEC,
+    complete: stats.seeders,
+    incomplete: stats.leechers,
+    peers: stats.peersBlob
+  });
+
+  res.writeHead(200, { 'Content-Type': 'text/plain', 'Content-Length': body.length });
+  res.end(body);
+});
+
+udpServer.bind(6969, '0.0.0.0', () =&gt; console.log('[Node.js UDP] Bound on :6969'));
+httpServer.listen(6969, '0.0.0.0', () =&gt; console.log('[Node.js HTTP] Bound on :6969'));</code></pre>
+      </div>
+    </div>
+  </details>
+
+  <!-- =====================================================================
+       MODULE 05: CODE, MEMORY & DATA SECURITY
+  ====================================================================== -->
+  <details class="module" id="mod-5" open>
+    <summary class="module-header">
+      <div class="module-header-left">
+        <span class="mod-index">MOD 05</span>
+        <span>Code, Memory & Data Security: Hardening Trackers Against Adversarial Swarms</span>
+      </div>
+      <span class="chevron">&#9654;</span>
+    </summary>
+    <div class="module-body">
+      <p>Public and private trackers are prime targets for reflective amplification attacks, Bencode parser exploits, Sybil swarm pollution, and forensic memory extraction. Hardening requires strict defensive engineering at every layer.</p>
+
+      <div class="callout danger">
+        <span class="callout-title">Critical Vulnerability: UDP Reflective Amplification (CVE-Class)</span>
+        If a UDP tracker responds to an <code class="inline">announce</code> request (98 bytes) with 100 peers (620 bytes) without first verifying a cryptographic <code class="inline">connection_id</code> issued to the source IP during a 16-byte <code class="inline">connect</code> handshake, an attacker can spoof a victim's IP address and achieve a <strong>6.3x bandwidth amplification factor</strong>. Never skip or weaken the HMAC <code class="inline">connection_id</code> validation.
+      </div>
+
+      <h3>5.1 Bencode Parser Fuzzing & Zip-Bomb Defenses</h3>
+      <ul>
+        <li><strong>Nesting Depth Cap:</strong> Malicious payloads like <code class="inline">llllllllllllllll...eeee</code> (100,000 nested lists) trigger <code class="inline">StackOverflowException</code> in recursive descent parsers. Enforce <code class="inline">MAX_DEPTH = 16</code> (standard <code class="inline">.torrent</code> files never exceed depth 4).</li>
+        <li><strong>Pre-Allocation Length Smashing:</strong> A payload starting with <code class="inline">2147483647:a</code> will trick naive parsers into allocating a 2 GB byte array before verifying that 2 GB of bytes actually exist in the socket buffer. Always assert <code class="inline">declaredLength &lt;= remainingBufferBytes</code> before allocating.</li>
+        <li><strong>Hash-DoS Collision Resistance:</strong> In Python, C#, and Node.js, standard dictionary keys are randomized per process via SipHash/Marvin, but custom <code class="inline">InfoHash.GetHashCode()</code> implementations using simple XOR are vulnerable to pre-computed multi-collision tables that degrade <code class="inline">O(1)</code> hash lookups into <code class="inline">O(N^2)</code> CPU lockups. Key your in-memory hash tables with a per-boot random 64-bit seed.</li>
+      </ul>
+
+      <h3>5.2 Cryptographic Private Tracker Passkeys (Zero-DB-Lookup HMAC)</h3>
+      <p>Legacy private trackers store a random 32-character <code class="inline">passkey</code> per user in SQL and execute a <code class="inline">SELECT</code> on every announce. Under heavy swarm load, this saturates database IOPS. Instead, construct a structured, self-verifying token:</p>
+      <div class="math-block">
+        Passkey = Base64Url( UserID_uint32 || KeyEpoch_uint16 || Truncated_HMAC_SHA256(ServerMasterKey, UserID || KeyEpoch || InfoHashSalt) )
+      </div>
+      <p>The tracker validates the passkey on the edge thread in ~150 nanoseconds using constant-time comparison (<code class="inline">CryptographicOperations.FixedTimeEquals</code> in C#, <code class="inline">hmac.compare_digest</code> in Python) without touching disk or SQL.</p>
+
+      <h3>5.3 Zero-Disk Forensics & Volatile RAM Execution</h3>
+      <ul>
+        <li><strong>Swap & Core Dump Lockdown:</strong> On Linux tracker nodes, invoke <code class="inline">mlockall(MCL_CURRENT | MCL_FUTURE)</code> via P/Invoke or <code class="inline">ctypes</code> and set <code class="inline">prctl(PR_SET_DUMPABLE, 0)</code> so kernel crash dumps or swap partitions never write peer IP tables to persistent NVMe blocks.</li>
+        <li><strong>IP Anonymization via Keyed BLAKE3 / SipHash:</strong> If a public tracker only needs to enforce per-IP rate limits without storing raw peer IPs in metrics logs, hash the client IP with a rotating 15-minute salt in volatile memory.</li>
+      </ul>
+    </div>
+  </details>
+
+  <!-- =====================================================================
+       MODULE 06: OPERATIONAL ANONYMITY & MIXNETS
+  ====================================================================== -->
+  <details class="module" id="mod-6" open>
+    <summary class="module-header">
+      <div class="module-header-left">
+        <span class="mod-index">MOD 06</span>
+        <span>Operational Anonymity: Tor Onion v3, I2P Garlic SAMv3 & Nym Mixnets</span>
+      </div>
+      <span class="chevron">&#9654;</span>
+    </summary>
+    <div class="module-body">
+      <p>Running BitTorrent over clearnet exposes the entire swarm graph to passive Sybil crawlers. Routing BitTorrent over darknets requires careful separation between <strong>low-latency circuit routing</strong> (Tor), <strong>packet-switched garlic routing</strong> (I2P), and <strong>continuous-time Poisson mixnets</strong> (Nym/Katzenpost).</p>
+
+      <table class="spec-table">
+        <thead>
+          <tr>
+            <th>Anonymity Layer</th>
+            <th>Transport Primitive</th>
+            <th>BitTorrent Compatibility</th>
+            <th>Adversary Threat Model & Vulnerability</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Tor Onion v3</strong><br>(ed25519 56-char <code class="inline">.onion</code>)</td>
+            <td>TCP-only SOCKS5 streams; 3-hop circuit + 3-hop rendezvous</td>
+            <td><strong>Tracker Signaling Only.</strong> Never push bulk piece data over Tor (congests exit/relay guard bandwidth).</td>
+            <td>Vulnerable to end-to-end timing correlation if an adversary controls the Guard and Rendezvous/Exit nodes. UDP BEP-15 &amp; DHT fail or leak clearnet IP via UDP fallback!</td>
+          </tr>
+          <tr>
+            <td><strong>I2P Network</strong><br>(Invisible Internet Project)</td>
+            <td>Unidirectional Garlic Tunnels (NTCP2 / SSU2 UDP) via <strong>SAMv3 Bridge</strong></td>
+            <td><strong>Native Full-Swarm Support.</strong> Designed specifically for anonymous P2P bulk transfer (I2PSnark, BiglyBT).</td>
+            <td>Resists single-node packet inspection by bundling multiple cloves per garlic message; vulnerable to high-resource statistical intersection attacks over weeks.</td>
+          </tr>
+          <tr>
+            <td><strong>Nym / Loopix Mixnet</strong><br>(Sphinx Packet Format)</td>
+            <td>5-layer stratified mix nodes + Poisson cover traffic + exponentially delayed forwarding</td>
+            <td><strong>Asynchronous Tracker &amp; Metadata Exchange.</strong> SURBs (Single-Use Reply Blocks) hide both requester and tracker.</td>
+            <td>Defeats Global Passive Adversaries (GPA) watching all internet fiber backbones simultaneously, at the cost of 200ms–1500ms latency.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout danger">
+        <span class="callout-title">The Classic Tor + BitTorrent Deanonymization Trap</span>
+        When a BitTorrent client routes HTTP tracker requests through Tor's SOCKS5 proxy (<code class="inline">127.0.0.1:9050</code>), two fatal leaks occur unless mitigated in code: (1) The client writes its real local/STUN IPv4 address into the <code class="inline">&amp;ip=</code> query parameter or BEP 10 <code class="inline">yourip</code> extension handshake, and (2) the client attempts UDP tracker/DHT/uTP connections directly outside the TCP-only SOCKS5 proxy. An anonymous tracker must <strong>ignore client-supplied IP fields</strong> and replace them with virtual cryptographic descriptors (32-byte I2P Base32 destination hashes or <code class="inline">.onion</code> virtual endpoints).
+      </div>
+
+      <!-- ANIMATED SVG: GARLIC TUNNELS & SPHINX SURB MIXNET -->
+      <div class="diagram-wrapper">
+        <svg class="flow-svg" viewBox="0 0 920 320" xmlns="http://www.w3.org/2000/svg">
+          <rect width="920" height="320" fill="#080a0d"/>
+
+          <!-- Seeder / Client -->
+          <rect x="25" y="95" width="145" height="130" rx="5" fill="#13161c" stroke="#00f59b" stroke-width="1.5"/>
+          <text x="97" y="125" fill="#00f59b" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">ANONYMOUS PEER</text>
+          <text x="97" y="145" fill="#8892b0" font-family="monospace" font-size="9" text-anchor="middle">SAMv3 / Sphinx Client</text>
+          <text x="97" y="172" fill="#d8dee9" font-family="monospace" font-size="9" text-anchor="middle">Packs Announce +</text>
+          <text x="97" y="186" fill="#ffb84d" font-family="monospace" font-size="9" text-anchor="middle">SURB Reply Block</text>
+          <text x="97" y="205" fill="#00d2ff" font-family="monospace" font-size="9" text-anchor="middle">Dummy Cover Traffic</text>
+
+          <!-- Outbound Mix / Garlic Tunnel -->
+          <rect x="240" y="35" width="420" height="105" rx="6" fill="#0e1015" stroke="#2e3846" stroke-dasharray="4 4"/>
+          <text x="450" y="55" fill="#00f59b" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">OUTBOUND UNIDIRECTIONAL GARLIC / SPHINX MIX TUNNEL</text>
+
+          <circle cx="305" cy="95" r="24" fill="#13161c" stroke="#00f59b" stroke-width="1.5"/>
+          <text x="305" y="99" fill="#fff" font-family="monospace" font-size="10" text-anchor="middle">Mix M1</text>
+
+          <circle cx="450" cy="95" r="24" fill="#13161c" stroke="#00f59b" stroke-width="1.5"/>
+          <text x="450" y="99" fill="#fff" font-family="monospace" font-size="10" text-anchor="middle">Mix M2</text>
+
+          <circle cx="595" cy="95" r="24" fill="#13161c" stroke="#00f59b" stroke-width="1.5"/>
+          <text x="595" y="99" fill="#fff" font-family="monospace" font-size="10" text-anchor="middle">Mix M3</text>
+
+          <!-- Inbound SURB / Garlic Tunnel -->
+          <rect x="240" y="180" width="420" height="105" rx="6" fill="#0e1015" stroke="#2e3846" stroke-dasharray="4 4"/>
+          <text x="450" y="200" fill="#00d2ff" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">INBOUND RETURN TUNNEL (BLIND SURB / LEASE-SET)</text>
+
+          <circle cx="595" cy="240" r="24" fill="#13161c" stroke="#00d2ff" stroke-width="1.5"/>
+          <text x="595" y="244" fill="#fff" font-family="monospace" font-size="10" text-anchor="middle">Hop R1</text>
+
+          <circle cx="450" cy="240" r="24" fill="#13161c" stroke="#00d2ff" stroke-width="1.5"/>
+          <text x="450" y="244" fill="#fff" font-family="monospace" font-size="10" text-anchor="middle">Hop R2</text>
+
+          <circle cx="305" cy="240" r="24" fill="#13161c" stroke="#00d2ff" stroke-width="1.5"/>
+          <text x="305" y="244" fill="#fff" font-family="monospace" font-size="10" text-anchor="middle">Hop R3</text>
+
+          <!-- Hidden Tracker -->
+          <rect x="730" y="95" width="165" height="130" rx="5" fill="#13161c" stroke="#ffb84d" stroke-width="1.5" class="node-glow"/>
+          <text x="812" y="125" fill="#ffb84d" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">BLIND TRACKER</text>
+          <text x="812" y="145" fill="#8892b0" font-family="monospace" font-size="9" text-anchor="middle">.b32.i2p / Sphinx Service</text>
+          <text x="812" y="172" fill="#d8dee9" font-family="monospace" font-size="9" text-anchor="middle">Knows 0 Client IPs</text>
+          <text x="812" y="190" fill="#00f59b" font-family="monospace" font-size="9" text-anchor="middle">Stores Ephemeral</text>
+          <text x="812" y="204" fill="#00f59b" font-family="monospace" font-size="9" text-anchor="middle">DestHashes / SURBs</text>
+
+          <!-- Animated Forward Flow -->
+          <path d="M 170 130 L 281 95" stroke="#00f59b" stroke-width="2" class="pulse-path" fill="none"/>
+          <line x1="329" y1="95" x2="426" y2="95" stroke="#00f59b" stroke-width="2" class="pulse-path"/>
+          <line x1="474" y1="95" x2="571" y2="95" stroke="#00f59b" stroke-width="2" class="pulse-path"/>
+          <path d="M 619 95 L 730 130" stroke="#00f59b" stroke-width="2" class="pulse-path" fill="none"/>
+
+          <!-- Animated Return Flow -->
+          <path d="M 730 195 L 619 240" stroke="#00d2ff" stroke-width="2" class="pulse-path" fill="none"/>
+          <line x1="571" y1="240" x2="474" y2="240" stroke="#00d2ff" stroke-width="2" class="pulse-path"/>
+          <line x1="426" y1="240" x2="329" y2="240" stroke="#00d2ff" stroke-width="2" class="pulse-path"/>
+          <path d="M 281 240 L 170 195" stroke="#00d2ff" stroke-width="2" class="pulse-path" fill="none"/>
+        </svg>
+        <div class="diagram-caption">Figure 6.1: Unidirectional Garlic/Sphinx Mixnet Routing with Blind Single-Use Reply Blocks (SURBs)</div>
+      </div>
+
+      <h3>6.1 Python I2P SAMv3 Bridge Socket Implementation</h3>
+      <p>To bind a tracker or peer directly into the I2P network without clearnet sockets, communicate with the local I2P router's SAMv3 bridge (default TCP port <code class="inline">7656</code>):</p>
+      <div class="code-container">
+        <div class="code-toolbar">
+          <span class="lang-tag">Python // i2p_samv3_tracker_session.py</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+        </div>
+<pre><code>import asyncio
+
+class I2pSamV3Session:
+    """Minimal async SAMv3 client to register a transient .b32.i2p destination for a darknet tracker."""
+    def __init__(self, sam_host: str = "127.0.0.1", sam_port: int = 7656):
+        self.sam_host = sam_host
+        self.sam_port = sam_port
+        self.pub_dest: str = ""
+        self.priv_key: str = ""
+
+    async def initialize_transient_destination(self, session_id: str = "SwarmTracker01") -&gt; str:
+        reader, writer = await asyncio.open_connection(self.sam_host, self.sam_port)
+
+        # 1. Handshake
+        writer.write(b"HELLO VERSION MIN=3.1 MAX=3.3\n")
+        await writer.drain()
+        hello_reply = (await reader.readline()).decode("ascii")
+        if "RESULT=OK" not in hello_reply:
+            raise RuntimeError(f"SAMv3 handshake failed: {hello_reply}")
+
+        # 2. Generate EdDSA-SHA512-Ed25519 (SIGNATURE_TYPE=7) transient destination
+        writer.write(b"DEST GENERATE SIGNATURE_TYPE=7\n")
+        await writer.drain()
+        dest_line = (await reader.readline()).decode("ascii").strip()
+        for token in dest_line.split(" "):
+            if token.startswith("PUB="):
+                self.pub_dest = token[4:]
+            elif token.startswith("PRIV="):
+                self.priv_key = token[5:]
+
+        # 3. Create Master Session with 3-hop inbound/outbound garlic tunnels
+        cmd = (
+            f"SESSION CREATE STYLE=STREAM ID={session_id} DESTINATION={self.priv_key} "
+            f"i2cp.leaseSetEncType=4,0 inbound.length=3 outbound.length=3\n"
+        ).encode("ascii")
+        writer.write(cmd)
+        await writer.drain()
+        sess_reply = (await reader.readline()).decode("ascii")
+        if "RESULT=OK" not in sess_reply:
+            raise RuntimeError(f"SAMv3 session creation failed: {sess_reply}")
+
+        return self.pub_dest  # Base64 destination used by I2P peers instead of IP:Port</code></pre>
+      </div>
+    </div>
+  </details>
+
+  <!-- =====================================================================
+       MODULE 07: BLEEDING-EDGE IMPLEMENTED PROTOCOLS
+  ====================================================================== -->
+  <details class="module" id="mod-7" open>
+    <summary class="module-header">
+      <div class="module-header-left">
+        <span class="mod-index">MOD 07</span>
+        <span>Bleeding-Edge Implemented Protocols, Libraries & Next-Gen Content Addressing</span>
+      </div>
+      <span class="chevron">&#9654;</span>
+    </summary>
+    <div class="module-body">
+      <p>The landscape of distributed file sharing has evolved rapidly beyond SHA-1 monolithic torrents into Merkle-tree content addressing, capability-based append-only logs, and onion-routed storage grids.</p>
+
+      <table class="spec-table">
+        <thead>
+          <tr>
+            <th>Protocol / System</th>
+            <th>Cryptographic & Routing Core</th>
+            <th>Advantage Over Legacy BEP 03</th>
+            <th>Reference Stack / Libraries</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>BitTorrent v2 (BEP 52)</strong></td>
+            <td>SHA-256 Merkle Trees per file (16 KiB leaf blocks)</td>
+            <td>Immunizes swarms against SHAttered SHA-1 collisions; enables cross-swarm deduplication of identical files across different torrents; instant block-level verification without waiting for full multi-MB piece downloads.</td>
+            <td><code class="inline">libtorrent-rasterbar 2.x</code>, <code class="inline">MonoTorrent</code>, <code class="inline">rqbit</code> (Rust)</td>
+          </tr>
+          <tr>
+            <td><strong>Iroh (by n0)</strong></td>
+            <td>BLAKE3 Verified Streaming (<code class="inline">bao</code>) + QUIC + <code class="inline">pkarr</code> (Mainline DHT signed records)</td>
+            <td>Ditches Kademlia content-hash routing (slow 20-hop lookups) in favor of dialing Ed25519 NodeIDs directly via QUIC hole-punching and verified BLAKE3 tree slices.</td>
+            <td><code class="inline">iroh</code> (Rust crate, C/Python FFI bindings)</td>
+          </tr>
+          <tr>
+            <td><strong>Veilid</strong> (cDc)</td>
+            <td>Private/Safety Route RPC over UDP/QUIC/WebSockets + DHT</td>
+            <td>Both sender and receiver define independent multi-hop encrypted routes; neither endpoint knows the other's IP address or intermediate relay topology.</td>
+            <td><code class="inline">veilid-core</code> (Rust / Python / Flutter)</td>
+          </tr>
+          <tr>
+            <td><strong>GNUnet CADET / FS</strong></td>
+            <td>R5N Randomized DHT + CHK (Content Hash Key) 3-key ECRS encoding</td>
+            <td>Dual-hashed blocks (<code class="inline">K_B = H(Block)</code>, <code class="inline">K_Q = H(EncryptedBlock)</code>) allow intermediate caching nodes to forward blocks without capability to decrypt them.</td>
+            <td><code class="inline">gnunet</code> C daemon, <code class="inline">libgnunet</code></td>
+          </tr>
+          <tr>
+            <td><strong>Reticulum Network Stack (RNS)</strong></td>
+            <td>500-byte MTU Public-Key Addressing over LoRa, Packet Radio, I2P, TCP/UDP</td>
+            <td>Zero-IP dependency; runs delay-tolerant encrypted file propagation (<code class="inline">LXMF</code>) over sub-GHz radio transceivers, Wi-Fi parabolic links, or darknets.</td>
+            <td><code class="inline">rns</code> / <code class="inline">lxmf</code> (Python)</td>
+          </tr>
+          <tr>
+            <td><strong>Torrust &amp; Aquatic</strong></td>
+            <td>Rust <code class="inline">io_uring</code> / <code class="inline">mio</code> multi-worker socket sharding</td>
+            <td>Sustains &gt;1.2 million announces/sec on commodity hardware using lock-free thread-per-core <code class="inline">SO_REUSEPORT</code> sharding.</td>
+            <td><code class="inline">aquatic_udp</code>, <code class="inline">torrust-tracker</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <!-- =====================================================================
+       MODULE 08: THEORETICAL & UNIMPLEMENTED RESEARCH PROTOCOLS
+  ====================================================================== -->
+  <details class="module" id="mod-8" open>
+    <summary class="module-header">
+      <div class="module-header-left">
+        <span class="mod-index">MOD 08</span>
+        <span>Theoretical, Academic & Unimplemented Anonymity / File-Sharing Protocols</span>
+      </div>
+      <span class="chevron">&#9654;</span>
+    </summary>
+    <div class="module-body">
+      <p>Even with Tor or I2P, a traditional tracker or DHT node still learns <em>which</em> <code class="inline">info_hash</code> is being queried, and peers in a private swarm must trust central database counters for upload/download ratios. Below are five bleeding-edge academic and theoretical protocol constructions—currently confined to cryptography papers or partial research prototypes—along with working proof-of-concept reference algorithms.</p>
+
+      <h3>8.1 Information-Theoretic PIR (Private Information Retrieval) Blind Trackers</h3>
+      <p><strong>Academic Basis:</strong> Chor, Goldreich, Kushilevitz, Sudan (FOCS / JACM) &amp; Devetak / Goldberg Multi-Server PIR; extended by DPF (Distributed Point Functions — Boyle, Gilboa, Ishai).</p>
+      <p><strong>The Problem:</strong> When a client queries a tracker for <code class="inline">info_hash</code> $i \in \{0, \dots, M-1\}$, the tracker operator learns that the client is interested in torrent $i$.<br>
+      <strong>The Theoretical Protocol:</strong> Suppose the swarm database is replicated across $k \ge 2$ non-colluding tracker mirrors, modeled as an $M$-row matrix $D$ where row $D[i]$ is the fixed-size compact peer list (e.g., 300 bytes = 50 peers) for torrent $i$. To fetch row $t$ without any tracker learning $t$:</p>
+      <ol>
+        <li>The client generates $k-1$ cryptographically random bitvectors $v_1, \dots, v_{k-1} \in \{0,1\}^M$.</li>
+        <li>The client computes $v_k = v_1 \oplus v_2 \oplus \dots \oplus v_{k-1} \oplus e_t$, where $e_t$ is the unit basis vector with a <code class="inline">1</code> solely at index $t$ and <code class="inline">0</code> everywhere else.</li>
+        <li>The client sends $v_j$ to Tracker $j$. Each $v_j$ is marginally uniform random—no single tracker (or up to $k-1$ colluding trackers) gains a single bit of Shannon information about $t$.</li>
+        <li>Tracker $j$ computes the XOR-inner-product $R_j = \bigoplus_{m=0}^{M-1} (v_j[m] \cdot D[m])$ and returns the 300-byte result $R_j$.</li>
+        <li>The client XORs the responses: $\bigoplus_{j=1}^k R_j = D[t]$.</li>
+      </ol>
+
+      <!-- ANIMATED SVG: 2-SERVER XOR-PIR BLIND TRACKER -->
+      <div class="diagram-wrapper">
+        <svg class="flow-svg" viewBox="0 0 920 290" xmlns="http://www.w3.org/2000/svg">
+          <rect width="920" height="290" fill="#080a0d"/>
+
+          <!-- Client Node -->
+          <rect x="30" y="65" width="210" height="160" rx="6" fill="#13161c" stroke="#bd93f9" stroke-width="1.5" class="node-glow"/>
+          <text x="135" y="95" fill="#bd93f9" font-family="monospace" font-size="12" font-weight="bold" text-anchor="middle">PIR SEEKER CLIENT</text>
+          <text x="135" y="118" fill="#d8dee9" font-family="monospace" font-size="10" text-anchor="middle">Target Swarm Index: t = 2</text>
+          <text x="135" y="142" fill="#00f59b" font-family="monospace" font-size="10" text-anchor="middle">v1 = CSPRNG(M bits)</text>
+          <text x="135" y="162" fill="#00d2ff" font-family="monospace" font-size="10" text-anchor="middle">v2 = v1 XOR e_t</text>
+          <text x="135" y="198" fill="#ffb84d" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">Peers[t] = R1 XOR R2</text>
+
+          <!-- Tracker Mirror 1 -->
+          <rect x="580" y="25" width="300" height="105" rx="6" fill="#13161c" stroke="#00f59b" stroke-width="1.5"/>
+          <text x="730" y="52" fill="#00f59b" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">TRACKER MIRROR A (Blind Node 1)</text>
+          <text x="730" y="75" fill="#8892b0" font-family="monospace" font-size="10" text-anchor="middle">Sees uniform random bitmask v1</text>
+          <text x="730" y="100" fill="#d8dee9" font-family="monospace" font-size="10" text-anchor="middle">R1 = XOR_Sum( D[i] where v1[i]==1 )</text>
+
+          <!-- Tracker Mirror 2 -->
+          <rect x="580" y="160" width="300" height="105" rx="6" fill="#13161c" stroke="#00d2ff" stroke-width="1.5"/>
+          <text x="730" y="187" fill="#00d2ff" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">TRACKER MIRROR B (Blind Node 2)</text>
+          <text x="730" y="210" fill="#8892b0" font-family="monospace" font-size="10" text-anchor="middle">Sees uniform random bitmask v2</text>
+          <text x="730" y="235" fill="#d8dee9" font-family="monospace" font-size="10" text-anchor="middle">R2 = XOR_Sum( D[i] where v2[i]==1 )</text>
+
+          <!-- Vectors -->
+          <path d="M 240 105 L 574 60" stroke="#00f59b" stroke-width="2" class="pulse-path" fill="none"/>
+          <text x="405" y="68" fill="#00f59b" font-family="monospace" font-size="10" text-anchor="middle">Query v1 (Zero Info Leaked)</text>
+
+          <path d="M 574 95 L 240 135" stroke="#ffb84d" stroke-width="2" class="pulse-path" fill="none"/>
+          <text x="415" y="128" fill="#ffb84d" font-family="monospace" font-size="10" text-anchor="middle">Response R1 (300B)</text>
+
+          <path d="M 240 165 L 574 200" stroke="#00d2ff" stroke-width="2" class="pulse-path" fill="none"/>
+          <text x="415" y="175" fill="#00d2ff" font-family="monospace" font-size="10" text-anchor="middle">Query v2 = v1 ^ e_t</text>
+
+          <path d="M 574 235 L 240 195" stroke="#ffb84d" stroke-width="2" class="pulse-path" fill="none"/>
+          <text x="405" y="234" fill="#ffb84d" font-family="monospace" font-size="10" text-anchor="middle">Response R2 (300B)</text>
+        </svg>
+        <div class="diagram-caption">Figure 8.1: Information-Theoretic 2-Server XOR-PIR Swarm Discovery (Zero Tracker Knowledge of Queried Torrent)</div>
+      </div>
+
+      <div class="code-container">
+        <div class="code-toolbar">
+          <span class="lang-tag">Python // pir_blind_tracker_poc.py (Working Information-Theoretic PIR Engine)</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+        </div>
+<pre><code>import os
+import socket
+import struct
+from typing import List
+
+ROW_BYTE_SIZE = 30  # 5 compact IPv4:Port peers (6 bytes each) per swarm slot
+
+
+def xor_bytes(a: bytes, b: bytes) -&gt; bytes:
+    return (int.from_bytes(a, "big") ^ int.from_bytes(b, "big")).to_bytes(len(a), "big")
+
+
+class BlindPirTrackerMirror:
+    """
+    Holds an identical replica of M swarm peer slots.
+    Computes PIR parity responses without ever learning which slot the client requested.
+    """
+    def __init__(self, database_rows: List[bytes]) -&gt; None:
+        assert all(len(r) == ROW_BYTE_SIZE for r in database_rows)
+        self.db = database_rows
+
+    def answer_pir_query(self, bitvector: int) -&gt; bytes:
+        acc = bytes(ROW_BYTE_SIZE)
+        for idx, row in enumerate(self.db):
+            if (bitvector &gt;&gt; idx) &amp; 1:
+                acc = xor_bytes(acc, row)
+        return acc
+
+
+def pir_client_fetch_swarm(
+    target_index: int,
+    total_swarms: int,
+    mirror_a: BlindPirTrackerMirror,
+    mirror_b: BlindPirTrackerMirror
+) -&gt; bytes:
+    # 1. Generate uniform random M-bit query for Mirror A
+    v1 = int.from_bytes(os.urandom((total_swarms + 7) // 8), "big") &amp; ((1 &lt;&lt; total_swarms) - 1)
+    # 2. Flip solely the target bit for Mirror B: v2 = v1 ^ (1 &lt;&lt; target_index)
+    v2 = v1 ^ (1 &lt;&lt; target_index)
+
+    # 3. Query both mirrors (neither learns anything about target_index)
+    r1 = mirror_a.answer_pir_query(v1)
+    r2 = mirror_b.answer_pir_query(v2)
+
+    # 4. Reconstruct exact compact peer list via R1 ^ R2
+    return xor_bytes(r1, r2)
+
+
+if __name__ == "__main__":
+    # Simulate 8 swarms in tracker table; each row holds 5 compact peers (30 bytes)
+    mock_db = [os.urandom(ROW_BYTE_SIZE) for _ in range(8)]
+    # Inject a known peer 10.42.0.99:51413 into Swarm #5
+    known_peer = socket.inet_aton("10.42.0.99") + struct.pack("!H", 51413)
+    mock_db[5] = known_peer + os.urandom(ROW_BYTE_SIZE - 6)
+
+    tracker_node_1 = BlindPirTrackerMirror(mock_db)
+    tracker_node_2 = BlindPirTrackerMirror(mock_db)
+
+    recovered = pir_client_fetch_swarm(5, 8, tracker_node_1, tracker_node_2)
+    ip_out = socket.inet_ntoa(recovered[:4])
+    port_out = struct.unpack("!H", recovered[4:6])[0]
+    print(f"[PIR Verified] Recovered Swarm #5 Peer: {ip_out}:{port_out} (Match={recovered == mock_db[5]})")</code></pre>
+      </div>
+
+      <h3>8.2 DC-Nets (Dining Cryptographers) &amp; Dissent Anonymous Announce Buses</h3>
+      <p><strong>Academic Basis:</strong> David Chaum (<em>The Dining Cryptographers Problem: Unconditional Sender and Recipient Untraceability</em>, J. Cryptology 1988); Wolinsky et al. (<em>Dissent: Accountable Anonymous Group Messaging</em>, OSDI).</p>
+      <p><strong>The Theoretical Protocol:</strong> In small, high-trust darknet swarms (e.g., 10–64 researchers or whistleblowers, similar to WASTE topology), routing topology itself can be eliminated. Every pair of nodes $(i, j)$ establishes a shared symmetric PRNG stream $S_{i,j}$ via Diffie-Hellman. In each synchronous epoch, every node broadcasts an $L$-byte ciphertext vector equal to the XOR of all its pairwise secrets (inverting sign/orientation for $i &lt; j$ vs $i &gt; j$). If node $k$ wishes to publish a new <code class="inline">.torrent</code> magnet or tracker announce, it XORs its payload $M$ into its broadcast. When all broadcasts are XORed together by every participant, all pairwise secrets $S_{i,j} \oplus S_{i,j} = 0$ cancel out completely, revealing $M$ with <strong>information-theoretic sender anonymity</strong>—even if 62 of the 64 nodes are NSA-controlled colluders.</p>
+
+      <h3>8.3 Zero-Knowledge Proof of Bandwidth / Ratio (zk-SNARK Trackerless Private Swarms)</h3>
+      <p><strong>Academic Basis:</strong> Decentralized Fair Exchange &amp; Zero-Knowledge Micropayment Channels (Boneh / Bünz / Fisch; Filecoin Proof-of-Spacetime / Proof-of-Data-Possession).</p>
+      <p><strong>The Problem:</strong> Private trackers require central databases tracking every user's upload/download ratio, creating a massive honeypot linking user accounts, passkeys, IP history, and snatched torrents.<br>
+      <strong>The Theoretical Protocol:</strong> Replace the tracker's user ratio table with blind <strong>Bandwidth Receipts</strong> and a Groth16 / Plonky2 zk-SNARK circuit:</p>
+      <ul>
+        <li>When Seeder $S$ sends piece $P_k$ to Leecher $L$, $L$ returns a blind Schnorr/BLS signature $\sigma_k$ over the tuple $(\text{Commitment}(S), \text{Epoch}, \text{PieceHash}_k)$.</li>
+        <li>To join a new swarm or request peers from a blind tracker, $S$ generates a zero-knowledge proof $\pi$ proving: <em>"I know $N$ distinct valid bandwidth receipts $\sigma_1, \dots, \sigma_N$ corresponding to my blinded Pedersen commitment $C = g^{\text{id}} h^r$, and their nullifiers have not been spent"</em>—without revealing which torrents were seeded, when they were seeded, or the user's identity.</li>
+      </ul>
+
+      <h3>8.4 Random Linear Network Coding (RLNC) Over Plausibly Deniable Mix Swarms</h3>
+      <p><strong>Academic Basis:</strong> Gkantsidis &amp; Rodriguez (MSR <em>Avalanche</em>); Ahlswede, Cai, Li, Yeung (<em>Network Information Flow</em>, IEEE Trans. Info Theory); OFFSystem / Owner-Free File System.</p>
+      <p><strong>The Theoretical Protocol:</strong> Standard BitTorrent suffers from the "last-piece coupon collector problem" and allows adversaries to identify exactly which file a node possesses by inspecting piece hashes. Under <strong>Galois Field $GF(2^8)$ Random Linear Network Coding</strong>:</p>
+      <ol>
+        <li>A file is split into $K$ source vectors $B_1, \dots, B_K$ over $GF(2^8)$.</li>
+        <li>No peer ever transmits or stores a raw piece $B_i$. Instead, whenever a node forwards data or caches blocks on disk, it draws $K$ random coefficients $c_1, \dots, c_K \in GF(2^8)$ and transmits the linear combination $Y = \sum_{i=1}^K c_i B_i$ alongside the $K$-byte coefficient header $\vec{c}$.</li>
+        <li>Intermediate mix nodes can re-encode two coded blocks $Y^{(1)}, Y^{(2)}$ into a new coded block $Y^{(3)} = \alpha Y^{(1)} + \beta Y^{(2)}$ <em>without ever decoding the file</em>.</li>
+        <li>Once a downloader collects any $K$ linearly independent coded blocks, it inverts the $K \times K$ coefficient matrix via Gaussian elimination over $GF(2^8)$ to reconstruct the original file.</li>
+      </ol>
+
+      <div class="code-container">
+        <div class="code-toolbar">
+          <span class="lang-tag">C# .NET 8 // Gf256NetworkCodingSwarm.cs (GF(2^8) Polynomial 0x11B Linear Block Encoder)</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy Code</button>
+        </div>
+<pre><code>using System;
+using System.Security.Cryptography;
+
+namespace SwarmNexus.Theoretical
+{
+    /// &lt;summary&gt;
+    /// Galois Field GF(2^8) Random Linear Network Coding (RLNC) Engine
+    /// Irreducible AES polynomial: x^8 + x^4 + x^3 + x + 1 (0x11B)
+    /// Enables intermediate mix-peers to re-combine encrypted swarm pieces without decoding.
+    /// &lt;/summary&gt;
+    public static class Gf256RlncEngine
+    {
+        private static readonly byte[] ExpTable = new byte[512];
+        private static readonly byte[] LogTable = new byte[256];
+
+        static Gf256RlncEngine()
+        {
+            int x = 1;
+            for (int i = 0; i &lt; 255; i++)
+            {
+                ExpTable[i] = (byte)x;
+                ExpTable[i + 255] = (byte)x;
+                LogTable[x] = (byte)i;
+                x = (x &lt;&lt; 1) ^ ((x &amp; 0x80) != 0 ? 0x11D : 0); // Generator 2 with 0x11D primitive
+            }
+        }
+
+        public static byte Mul(byte a, byte b) =&gt;
+            (a == 0 || b == 0) ? (byte)0 : ExpTable[LogTable[a] + LogTable[b]];
+
+        /// &lt;summary&gt;
+        /// Produces a fresh coded block Y = Sum(coeff[i] * SourceBlock[i]) in GF(2^8).
+        /// Every peer in the swarm transmits unique algebraic combinations—eliminating piece rarity.
+        /// &lt;/summary&gt;
+        public static (byte[] Coefficients, byte[] CodedPayload) EncodeLinearCombination(byte[][] sourcePieces)
+        {
+            int k = sourcePieces.Length;
+            int pieceLen = sourcePieces[0].Length;
+            byte[] coeffs = RandomNumberGenerator.GetBytes(k);
+            byte[] coded = new byte[pieceLen];
+
+            for (int i = 0; i &lt; k; i++)
+            {
+                byte c = coeffs[i];
+                if (c == 0) continue;
+                byte[] src = sourcePieces[i];
+                for (int b = 0; b &lt; pieceLen; b++)
+                {
+                    coded[b] ^= Mul(c, src[b]); // Addition in GF(2^8) is bitwise XOR
+                }
+            }
+            return (coeffs, coded);
+        }
+    }
+}</code></pre>
+      </div>
+
+      <h3>8.5 Oblivious RAM (Path-ORAM) Distributed Hash Tables</h3>
+      <p><strong>Academic Basis:</strong> Stefanov et al. (<em>Path ORAM: An Extremely Simple Oblivious RAM Protocol</em>, CCS / JACM); Keller &amp; Scholl Oblivious Data Structures.</p>
+      <p><strong>The Theoretical Protocol:</strong> Even if a tracker uses encrypted Intel SGX / AMD SEV-SNP confidential computing enclaves, an adversary with root hypervisor access can observe the enclave's RAM page-fault and cache-line access patterns to deduce which swarms are popular or which two peers are accessing the same <code class="inline">info_hash</code> bucket. Wrapping the tracker's swarm table in a binary tree <strong>Path-ORAM</strong> assigns every <code class="inline">info_hash</code> to a uniformly random leaf path $L \in \{0, \dots, 2^H - 1\}$. On every announce, the enclave reads and re-encrypts the entire root-to-leaf path ($O(\log N)$ buckets), remaps the <code class="inline">info_hash</code> to a brand-new random leaf $L'$, and flushes its local Stash back into the tree—making any two swarm accesses computationally indistinguishable to a hardware bus snooper.</p>
+    </div>
+  </details>
+
+  <!-- =====================================================================
+       MODULE 09: INTERACTIVE BENCODE & WIRE PACKET LAB
+  ====================================================================== -->
+  <details class="module" id="mod-9" open>
+    <summary class="module-header">
+      <div class="module-header-left">
+        <span class="mod-index">MOD 09</span>
+        <span>Interactive Browser Lab: Live Bencode AST Inspector & Compact Peer Hex Packer</span>
+      </div>
+      <span class="chevron">&#9654;</span>
+    </summary>
+    <div class="module-body">
+      <p>Test deterministic Bencode encoding, compact IPv4/Port 6-byte packing, and BEP 15 packet framing directly in this local sandbox.</p>
+
+      <div class="lab-grid">
+        <div class="lab-box">
+          <label for="labJsonInput">1. JSON Tracker Dictionary Input (Auto-Converts to Deterministic Bencode)</label>
+          <textarea id="labJsonInput" rows="7">{
+  "interval": 1800,
+  "complete": 42,
+  "incomplete": 7,
+  "tracker id": "SwarmNexus-v2"
+}</textarea>
+          <label for="labPeerInput" style="margin-top:12px;">2. Compact Peer Endpoints (Comma-separated IPv4:Port)</label>
+          <input type="text" id="labPeerInput" value="192.168.1.50:6881, 10.42.0.99:51413, 172.16.8.12:8999">
+        </div>
+
+        <div class="lab-box">
+          <label>Deterministic Bencode Output (ASCII View)</label>
+          <textarea id="labBencodeAscii" rows="4" readonly></textarea>
+          <label style="margin-top:12px;">Packed Compact Peers (BEP 23 6-Byte Stride Hex Dump)</label>
+          <textarea id="labCompactHex" rows="3" readonly></textarea>
+          <label style="margin-top:12px;">BEP 15 UDP Announce Response Wire Hex (20B Header + 6N Peers)</label>
+          <textarea id="labUdpWireHex" rows="3" readonly></textarea>
+        </div>
+      </div>
+    </div>
+  </details>
+
+</main>
+
+<script>
+  // 1. Copy Code Button Handler
+  function copyCode(btn) {
+    const pre = btn.closest('.code-container').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      const orig = btn.innerText;
+      btn.innerText = 'Copied!';
+      btn.style.borderColor = '#00f59b';
+      setTimeout(() => {
+        btn.innerText = orig;
+        btn.style.borderColor = '';
+      }, 1400);
+    });
+  }
+
+  // 2. Expand / Collapse All Modules
+  document.getElementById('btnExpandAll').addEventListener('click', () => {
+    document.querySelectorAll('details.module, details.sub-panel').forEach(d => d.open = true);
+  });
+
+  document.getElementById('btnCollapseAll').addEventListener('click', () => {
+    document.querySelectorAll('details.module').forEach(d => d.open = false);
+  });
+
+  // 3. Live Sidebar Filter
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase().trim();
+    document.querySelectorAll('details.module').forEach(mod => {
+      if (!q) {
+        mod.style.display = '';
+        return;
+      }
+      const match = mod.innerText.toLowerCase().includes(q);
+      mod.style.display = match ? '' : 'none';
+      if (match) mod.open = true;
+    });
+  });
+
+  // 4. Interactive Bencode & BEP-15/23 Wire Lab
+  const jsonIn = document.getElementById('labJsonInput');
+  const peerIn = document.getElementById('labPeerInput');
+  const outAscii = document.getElementById('labBencodeAscii');
+  const outCompact = document.getElementById('labCompactHex');
+  const outUdp = document.getElementById('labUdpWireHex');
+
+  function encodeBencodeAscii(val) {
+    if (typeof val === 'number' && Number.isInteger(val)) return `i${val}e`;
+    if (typeof val === 'string') return `${val.length}:${val}`;
+    if (Array.isArray(val)) return 'l' + val.map(encodeBencodeAscii).join('') + 'e';
+    if (val && typeof val === 'object') {
+      const keys = Object.keys(val).sort();
+      return 'd' + keys.map(k => `${k.length}:${k}${encodeBencodeAscii(val[k])}`).join('') + 'e';
+    }
+    return '';
+  }
+
+  function toHex(num, bytes) {
+    return (num >>> 0).toString(16).padStart(bytes * 2, '0');
+  }
+
+  function updateLab() {
+    try {
+      const parsed = JSON.parse(jsonIn.value);
+      outAscii.value = encodeBencodeAscii(parsed);
+
+      const peerTokens = peerIn.value.split(',').map(s => s.trim()).filter(Boolean);
+      const compactHexParts = [];
+      for (const token of peerTokens) {
+        const [ip, portStr] = token.split(':');
+        const octets = (ip || '').split('.').map(Number);
+        const port = parseInt(portStr || '6881', 10);
+        if (octets.length === 4 && octets.every(o => o >= 0 && o <= 255)) {
+          const ipHex = octets.map(o => toHex(o, 1)).join('');
+          const portHex = toHex(port & 0xffff, 2);
+          compactHexParts.push(`${ipHex}${portHex}`);
+        }
+      }
+      outCompact.value = compactHexParts.join(' ');
+
+      // Build BEP-15 Announce Resp Header: Action=1, TxID=0xdeadbeef, Interval, Leechers, Seeders
+      const interval = parsed.interval || 1800;
+      const leechers = parsed.incomplete || 0;
+      const seeders = parsed.complete || 0;
+      const hdrHex = [
+        toHex(1, 4),
+        'deadbeef',
+        toHex(interval, 4),
+        toHex(leechers, 4),
+        toHex(seeders, 4)
+      ].join(' ');
+      outUdp.value = `${hdrHex} | ${compactHexParts.join(' ')}`;
+    } catch (err) {
+      outAscii.value = `[JSON Syntax Error]: ${err.message}`;
+    }
+  }
+
+  jsonIn.addEventListener('input', updateLab);
+  peerIn.addEventListener('input', updateLab);
+  updateLab();
+</script>
+</body>
+</html>
